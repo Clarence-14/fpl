@@ -153,7 +153,7 @@ const FPLScout = {
           <td>
             <div class="player-identity-cell">
               <div>
-                <div class="fw-bold d-flex align-items-center gap-1">
+                <div class="fw-bold text-white d-flex align-items-center gap-1">
                   ${p.web_name}
                   ${p.status !== 'a' ? `<span class="badge bg-danger p-1" title="${p.news}">!</span>` : ''}
                 </div>
@@ -166,10 +166,10 @@ const FPLScout = {
             <span class="smart-score-badge">${p.smart_buy_score}</span>
           </td>
           <td class="fw-bold ${p.form >= 6 ? 'text-success' : (p.form < 3 ? 'text-danger' : 'text-white')}">${p.form}</td>
-          <td>${p.total_points}</td>
-          <td>${p.xgi_per_90}</td>
-          <td>${p.ict_index}</td>
-          <td>${p.avg_fdr_3}</td>
+          <td class="text-white">${p.total_points}</td>
+          <td class="text-white">${p.xgi_per_90}</td>
+          <td class="text-white">${p.ict_index}</td>
+          <td class="text-white">${p.avg_fdr_3}</td>
           <td>${fixtureBadge}</td>
           <td class="text-end">
             <div class="btn-group btn-group-sm">

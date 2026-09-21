@@ -147,7 +147,7 @@ const FPLPitch = {
   },
 
   // Auto-pick balanced squad based on highest Smart Buy Scores within £100m
-  autoPickSquad() {
+  autoPickSquad(showToast = false) {
     const available = [...this.allPlayers].filter(p => p.status === 'a');
     available.sort((a, b) => b.smart_buy_score - a.smart_buy_score);
 
@@ -406,8 +406,7 @@ const FPLPitch = {
         
         <div onclick="FPLPitch.handlePlayerClick(${player.id})">
           <div class="pitch-player-avatar-wrap">
-            <img src="${player.photo}" alt="${player.web_name}" class="pitch-player-avatar" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-            <div class="pitch-player-kit-fallback" style="display: none;">
+            <div class="pitch-player-kit-fallback">
               <span class="pos-tag pos-${player.position}" style="font-size: 0.6rem; padding: 2px 4px;">${player.position}</span>
             </div>
           </div>

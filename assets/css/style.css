@@ -67,17 +67,70 @@ body, p, span, div, h1, h2, h3, h4, h5, h6, td, th, li, label {
   color: #ffffff !important;
 }
 
-/* Force Table Text to Crisp White/Light Slate */
+/* Force Table Text to Crisp White/Light Slate — Override Bootstrap 5 defaults */
 .table,
 .table-fpl,
 .table-fpl thead th,
-.table-fpl tbody td {
+.table-fpl tbody td,
+.table-fpl tbody tr td,
+.table-hover tbody tr td,
+.table-hover tbody tr:hover td,
+.table-hover tbody tr:hover,
+.table > :not(caption) > * > * {
   color: #f1f5f9 !important;
-  border-color: var(--border-color);
+  --bs-table-color: #f1f5f9;
+  --bs-table-bg: transparent;
+  --bs-table-hover-color: #ffffff;
+  --bs-table-hover-bg: rgba(255, 255, 255, 0.06);
+  border-color: var(--border-color) !important;
 }
 
-.table-fpl tbody tr:hover td {
+.table-fpl tbody tr:hover td,
+.table-hover tbody tr:hover > * {
   color: #ffffff !important;
+  --bs-table-color: #ffffff;
+}
+
+/* Ensure table background is dark */
+.table-fpl,
+.table {
+  --bs-table-bg: transparent;
+  --bs-table-striped-bg: rgba(255, 255, 255, 0.03);
+  --bs-table-striped-color: #f1f5f9;
+  --bs-table-active-bg: rgba(255, 255, 255, 0.06);
+  --bs-table-active-color: #ffffff;
+  background-color: transparent;
+}
+
+/* Filter bar text and controls */
+.filter-bar,
+.filter-bar label,
+.filter-bar span,
+.filter-bar .small {
+  color: var(--text-main) !important;
+}
+
+/* Pagination links dark styling */
+.page-link {
+  color: #f1f5f9 !important;
+  background-color: #161e30 !important;
+  border-color: var(--border-color) !important;
+}
+
+.page-link:hover {
+  color: var(--pl-green) !important;
+  background-color: #1c263c !important;
+}
+
+.page-item.active .page-link {
+  color: #000 !important;
+  background-color: var(--pl-green) !important;
+  border-color: var(--pl-green) !important;
+}
+
+.page-item.disabled .page-link {
+  color: #64748b !important;
+  background-color: #111622 !important;
 }
 
 /* Form inputs & selects */
@@ -563,19 +616,25 @@ body, p, span, div, h1, h2, h3, h4, h5, h6, td, th, li, label {
    Player Scout & Data Tables
    ========================================================================== */
 .table-fpl {
-  color: var(--text-main);
+  color: #f1f5f9 !important;
   margin-bottom: 0;
   vertical-align: middle;
+  background-color: var(--bg-card) !important;
+}
+
+.table-responsive {
+  background-color: var(--bg-card);
+  border-radius: var(--radius-md);
 }
 
 .table-fpl thead th {
-  background-color: #161e30;
-  color: var(--text-muted);
+  background-color: #161e30 !important;
+  color: #94a3b8 !important;
   font-size: 0.78rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.6px;
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color) !important;
   padding: 12px 10px;
   white-space: nowrap;
   cursor: pointer;
@@ -583,7 +642,16 @@ body, p, span, div, h1, h2, h3, h4, h5, h6, td, th, li, label {
 }
 
 .table-fpl thead th:hover {
-  color: var(--pl-green);
+  color: var(--pl-green) !important;
+}
+
+.table-fpl tbody tr {
+  background-color: transparent !important;
+}
+
+.table-fpl tbody td {
+  background-color: transparent !important;
+  color: #f1f5f9 !important;
 }
 
 .table-fpl tbody tr {
@@ -903,5 +971,165 @@ body, p, span, div, h1, h2, h3, h4, h5, h6, td, th, li, label {
   padding: 14px;
   border-radius: var(--radius-md);
   margin-bottom: 12px;
+}
+
+/* ==========================================================================
+   ENHANCED MOBILE RESPONSIVENESS
+   ========================================================================== */
+
+/* Pitch player kit fallback always visible */
+.pitch-player-kit-fallback {
+  display: flex !important;
+}
+
+/* Modal responsiveness on mobile */
+@media (max-width: 767px) {
+  .modal-dialog {
+    margin: 0.5rem;
+    max-width: calc(100% - 1rem);
+  }
+
+  .modal-body {
+    padding: 1rem !important;
+  }
+
+  .modal-footer {
+    padding: 0.75rem 1rem !important;
+  }
+
+  /* Advice modal columns stack on mobile */
+  .advice-card-highlight .d-flex {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .advice-card-highlight .text-end {
+    text-align: start !important;
+  }
+
+  /* Transfer suggestion responsive */
+  .advice-card-highlight .row .col-sm-5,
+  .advice-card-highlight .row .col-sm-2 {
+    width: 100%;
+  }
+
+  /* Manager profile banner stacks on mobile */
+  #manager-profile-banner .d-flex.flex-wrap {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 12px !important;
+  }
+
+  #manager-profile-banner .d-flex.gap-4 {
+    width: 100%;
+    justify-content: space-around;
+  }
+
+  /* Gameweek ticker wrap */
+  .gw-ticker-banner .d-flex.flex-wrap {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 8px !important;
+  }
+
+  .gw-ticker-banner .d-flex.align-items-center.gap-3 {
+    flex-wrap: wrap;
+    gap: 6px !important;
+  }
+
+  /* Filter bar on Scout tab: stack controls */
+  .filter-bar .row {
+    gap: 8px;
+  }
+
+  .filter-bar .col-md-3,
+  .filter-bar .col-md-2 {
+    flex: 0 0 100%;
+    max-width: 100%;
+  }
+
+  .filter-bar .col-6 {
+    flex: 0 0 48%;
+    max-width: 48%;
+  }
+
+  /* Strategy tab FDR table controls */
+  .fpl-card .d-flex.flex-wrap.gap-2 {
+    flex-direction: column;
+  }
+
+  #ticker-search,
+  #ticker-sort-select {
+    width: 100% !important;
+  }
+
+  /* Screenshot upload modal adjustments */
+  .screenshot-dropzone {
+    padding: 20px 12px;
+  }
+
+  .screenshot-dropzone h6 {
+    font-size: 0.9rem;
+  }
+
+  .screenshot-dropzone i.fs-1 {
+    font-size: 2rem !important;
+  }
+
+  /* OCR results grid smaller */
+  #ocr-matched-players-list .col-6 {
+    flex: 0 0 50%;
+    max-width: 50%;
+  }
+
+  /* Captaincy cards responsive */
+  #captain-recommendations-container .col-md-6.col-lg-4 {
+    flex: 0 0 100%;
+    max-width: 100%;
+  }
+
+  /* Differentials cards responsive */
+  #differentials-container .col-md-6.col-lg-3 {
+    flex: 0 0 50%;
+    max-width: 50%;
+  }
+
+  /* Budget sidebar full width */
+  .col-lg-4 .fpl-card {
+    margin-bottom: 1rem;
+  }
+
+  /* Toast container mobile */
+  .toast-container {
+    max-width: calc(100vw - 1rem);
+    right: 0.5rem !important;
+    bottom: 0.5rem !important;
+  }
+}
+
+/* Extra small phones */
+@media (max-width: 400px) {
+  #differentials-container .col-md-6.col-lg-3 {
+    flex: 0 0 100%;
+    max-width: 100%;
+  }
+
+  #ocr-matched-players-list .col-6 {
+    flex: 0 0 100%;
+    max-width: 100%;
+  }
+
+  .filter-bar .col-6 {
+    flex: 0 0 100%;
+    max-width: 100%;
+  }
+
+  .brand-logo span {
+    font-size: 1rem;
+  }
+
+  .brand-badge {
+    display: none;
+  }
 }
 

@@ -1,13 +1,22 @@
-name: Update FPL Live Data
+name: Update FPL Data & Deploy GitHub Pages
 
 on:
   schedule:
-    # Runs daily at 06:00 UTC
-    - cron: '0 6 * * *'
+    # Runs every 6 hours to keep data fresh
+    - cron: '0 */6 * * *'
+  push:
+    branches: [ main, master ]
   workflow_dispatch: # Allows manual trigger from GitHub Actions tab
 
 permissions:
   contents: write
+  pages: write
+  id-token: write
+
+# Only allow one deployment at a time
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
 
 jobs:
   refresh-data:
@@ -17,18 +26,172 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.2'
-          extensions: curl, json
+      - name: Fetch fresh FPL data from official API
+        run: |
+          echo "Fetching FPL bootstrap-static data..."
+          curl -sS -f -o /tmp/bootstrap.json \
+            -H "User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36" \
+            "https://fantasy.premierleague.com/api/bootstrap-static/" || {
+            echo "Warning: Could not fetch bootstrap data, using existing cache"
+            exit 0
+          }
 
-      - name: Fetch Fresh FPL Data & Export Static Assets
-        run: php export_static.php
+          echo "Fetching FPL fixtures data..."
+          curl -sS -f -o /tmp/fixtures.json \
+            -H "User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36" \
+            "https://fantasy.premierleague.com/api/fixtures/" || {
+            echo "Warning: Could not fetch fixtures data"
+          }
+
+          echo "Processing data with Node.js..."
+          node -e "
+            const fs = require('fs');
+            try {
+              const bootstrap = JSON.parse(fs.readFileSync('/tmp/bootstrap.json', 'utf8'));
+              const fixtures = fs.existsSync('/tmp/fixtures.json')
+                ? JSON.parse(fs.readFileSync('/tmp/fixtures.json', 'utf8'))
+                : [];
+
+              const posMap = {1:'GKP', 2:'DEF', 3:'MID', 4:'FWD'};
+              const teams = bootstrap.teams.map(t => ({
+                id: t.id, name: t.name, short_name: t.short_name,
+                strength: t.strength, strength_attack_home: t.strength_attack_home,
+                strength_attack_away: t.strength_attack_away,
+                strength_defence_home: t.strength_defence_home,
+                strength_defence_away: t.strength_defence_away
+              }));
+
+              const currentGw = bootstrap.events.find(e => e.is_current)?.id || 1;
+              const nextGw = bootstrap.events.find(e => e.is_next)?.id || currentGw + 1;
+
+              // Build next 5 fixtures per team
+              const futureFixtures = fixtures.filter(f => !f.finished && f.event >= nextGw)
+                .sort((a,b) => a.event - b.event);
+
+              const teamFixtures = {};
+              teams.forEach(t => { teamFixtures[t.id] = []; });
+              futureFixtures.forEach(f => {
+                if (teamFixtures[f.team_h] && teamFixtures[f.team_h].length < 5) {
+                  teamFixtures[f.team_h].push({
+                    event: f.event, opponent_id: f.team_a,
+                    opponent_name: teams.find(t=>t.id===f.team_a)?.short_name || '?',
+                    is_home: true, difficulty: f.team_h_difficulty || 3
+                  });
+                }
+                if (teamFixtures[f.team_a] && teamFixtures[f.team_a].length < 5) {
+                  teamFixtures[f.team_a].push({
+                    event: f.event, opponent_id: f.team_h,
+                    opponent_name: teams.find(t=>t.id===f.team_h)?.short_name || '?',
+                    is_home: false, difficulty: f.team_a_difficulty || 3
+                  });
+                }
+              });
+
+              // Calculate FDR averages
+              const fdrData = teams.map(t => {
+                const fx = teamFixtures[t.id] || [];
+                const avg3 = fx.length >= 3 ? (fx.slice(0,3).reduce((s,f)=>s+f.difficulty,0)/3).toFixed(2) : null;
+                const avg5 = fx.length >= 5 ? (fx.slice(0,5).reduce((s,f)=>s+f.difficulty,0)/5).toFixed(2) : null;
+                return { team_id: t.id, team_name: t.name, team_short: t.short_name, avg_fdr_3: avg3 ? parseFloat(avg3) : 3, avg_fdr_5: avg5 ? parseFloat(avg5) : 3, fixtures: fx };
+              });
+
+              // Process players
+              const players = bootstrap.elements
+                .filter(p => p.minutes > 0 || p.total_points > 0 || parseFloat(p.form) > 0)
+                .map(p => {
+                  const team = teams.find(t => t.id === p.team);
+                  const fx = teamFixtures[p.team] || [];
+                  const nextOpp = fx[0] || null;
+                  const avgFdr3 = fx.length >= 3 ? parseFloat((fx.slice(0,3).reduce((s,f)=>s+f.difficulty,0)/3).toFixed(2)) : 3;
+                  const mins = p.minutes || 1;
+                  const xgi90 = parseFloat((((parseFloat(p.expected_goals)||0)+(parseFloat(p.expected_assists)||0))/mins*90).toFixed(2));
+                  const form = parseFloat(p.form) || 0;
+                  const fdrBonus = Math.max(0, (3 - avgFdr3) * 2);
+                  const homeBonus = (nextOpp && nextOpp.is_home) ? 0.5 : 0;
+                  const sbs = parseFloat((form * 3.5 + fdrBonus * 3 + xgi90 * 25 + (p.value_form || 0) * 1.5).toFixed(1));
+                  const capScore = parseFloat((form * 3.5 + fdrBonus * 3 + xgi90 * 25 + homeBonus * 10).toFixed(1));
+
+                  return {
+                    id: p.id, first_name: p.first_name, second_name: p.second_name,
+                    web_name: p.web_name, team_id: p.team,
+                    team_name: team?.name || '', team_short: team?.short_name || '',
+                    position: posMap[p.element_type] || 'MID',
+                    price: parseFloat((p.now_cost / 10).toFixed(1)),
+                    form: form, total_points: p.total_points,
+                    xgi_per_90: xgi90, ict_index: parseFloat(p.ict_index) || 0,
+                    selected_by_percent: parseFloat(p.selected_by_percent) || 0,
+                    transfers_in_event: p.transfers_in_event || 0,
+                    transfers_out_event: p.transfers_out_event || 0,
+                    minutes: p.minutes, goals_scored: p.goals_scored,
+                    assists: p.assists, clean_sheets: p.clean_sheets,
+                    status: p.status, news: p.news || '',
+                    smart_buy_score: sbs, captaincy_score: capScore,
+                    avg_fdr_3: avgFdr3, value_form: parseFloat(p.value_form) || 0,
+                    next_opponent: nextOpp
+                  };
+                });
+
+              players.sort((a,b) => b.smart_buy_score - a.smart_buy_score);
+
+              const output = {
+                success: true,
+                current_gameweek: currentGw,
+                next_gameweek: nextGw,
+                gameweeks: bootstrap.events.map(e => ({
+                  id: e.id, deadline_time: e.deadline_time, is_current: e.is_current, is_next: e.is_next
+                })),
+                teams: teams,
+                players: players,
+                captains: players.filter(p=>p.status==='a').sort((a,b)=>b.captaincy_score-a.captaincy_score).slice(0,6),
+                differentials: players.filter(p=>p.status==='a'&&p.selected_by_percent<10&&p.form>=3).sort((a,b)=>b.smart_buy_score-a.smart_buy_score).slice(0,8),
+                top_transfers_in: [...players].sort((a,b)=>b.transfers_in_event-a.transfers_in_event).slice(0,5),
+                top_transfers_out: [...players].sort((a,b)=>b.transfers_out_event-a.transfers_out_event).slice(0,5),
+                fdr: fdrData,
+                last_updated: new Date().toISOString(),
+                cached: false
+              };
+
+              fs.writeFileSync('data/fpl_data.json', JSON.stringify(output));
+              console.log('Successfully processed ' + players.length + ' players');
+            } catch (err) {
+              console.error('Processing error:', err.message);
+              process.exit(1);
+            }
+          "
 
       - name: Commit and push if data changed
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/fpl_data.json index.html
-          git diff --quiet && git diff --staged --quiet || (git commit -m "Automated update: Fresh FPL data [skip ci]" && git push)
+          git add data/fpl_data.json
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-update: Fresh FPL data $(date -u '+%Y-%m-%d %H:%M') UTC [skip ci]" && git push)
+
+  # Deploy to GitHub Pages
+  deploy:
+    needs: refresh-data
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Pull latest data
+        run: git pull --rebase origin ${{ github.ref_name }} || true
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
