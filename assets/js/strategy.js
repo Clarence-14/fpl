@@ -175,7 +175,7 @@ const FPLStrategy = {
           <div class="row align-items-center">
             <!-- SELL COLUMN -->
             <div class="col-md-5">
-              <div class="p-3 rounded border border-danger bg-danger-subtle text-dark">
+              <div class="p-3 rounded border border-danger bg-danger-subtle text-white">
                 <div class="d-flex justify-content-between align-items-start">
                   <div>
                     <span class="badge bg-danger text-white mb-1">SELL</span>
@@ -202,7 +202,7 @@ const FPLStrategy = {
 
             <!-- BUY COLUMN -->
             <div class="col-md-5">
-              <div class="p-3 rounded border border-success bg-success-subtle text-dark">
+              <div class="p-3 rounded border border-success bg-success-subtle text-white">
                 <div class="d-flex justify-content-between align-items-start">
                   <div>
                     <span class="badge bg-success text-dark fw-bold mb-1">BUY</span>

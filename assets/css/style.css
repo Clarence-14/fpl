@@ -52,6 +52,106 @@ body {
   background-attachment: fixed;
 }
 
+/* ==========================================================================
+   Universal High-Contrast Dark Text & Contrast Rules
+   ========================================================================== */
+body, p, span, div, h1, h2, h3, h4, h5, h6, td, th, li, label {
+  color: var(--text-main);
+}
+
+.text-muted {
+  color: #94a3b8 !important;
+}
+
+.text-white {
+  color: #ffffff !important;
+}
+
+/* Force Table Text to Crisp White/Light Slate */
+.table,
+.table-fpl,
+.table-fpl thead th,
+.table-fpl tbody td {
+  color: #f1f5f9 !important;
+  border-color: var(--border-color);
+}
+
+.table-fpl tbody tr:hover td {
+  color: #ffffff !important;
+}
+
+/* Form inputs & selects */
+.form-select,
+.form-control,
+.form-select-dark, 
+.form-control-dark {
+  color: #ffffff !important;
+  background-color: var(--bg-input) !important;
+  border-color: var(--border-color) !important;
+}
+
+.form-select option,
+.form-select-dark option {
+  background-color: #171f30;
+  color: #ffffff;
+}
+
+/* Modals & Dropdowns */
+.modal-content,
+.modal-content-dark {
+  color: #f8fafc !important;
+  background-color: #121826 !important;
+}
+
+.dropdown-menu,
+.dropdown-menu-dark {
+  background-color: #171f30 !important;
+  border: 1px solid var(--border-color);
+}
+
+.dropdown-item {
+  color: #e2e8f0 !important;
+}
+
+.dropdown-item:hover {
+  background-color: rgba(0, 255, 135, 0.15) !important;
+  color: #00ff87 !important;
+}
+
+/* Fix subtle alert boxes */
+.bg-danger-subtle {
+  background-color: rgba(220, 38, 38, 0.18) !important;
+  color: #fca5a5 !important;
+}
+
+.bg-success-subtle {
+  background-color: rgba(16, 185, 129, 0.18) !important;
+  color: #86efac !important;
+}
+
+.bg-info-subtle {
+  background-color: rgba(6, 182, 212, 0.18) !important;
+  color: #67e8f9 !important;
+}
+
+/* Navbar Toggler / Hamburger Button */
+.navbar-toggler {
+  padding: 6px 10px;
+  border: 1px solid rgba(0, 255, 135, 0.4) !important;
+  background: rgba(0, 255, 135, 0.08);
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+}
+
+.navbar-toggler:hover {
+  background: rgba(0, 255, 135, 0.2);
+  box-shadow: 0 0 10px var(--pl-green-glow);
+}
+
+.navbar-toggler:focus {
+  box-shadow: 0 0 0 0.2rem rgba(0, 255, 135, 0.25);
+}
+
 /* Scrollbar */
 ::-webkit-scrollbar {
   width: 7px;

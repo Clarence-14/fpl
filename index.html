@@ -38,52 +38,58 @@
   <!-- Toast Notification Container -->
   <div id="toast-container" class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1080;"></div>
 
-  <!-- Top Navigation Bar -->
-  <nav class="fpl-navbar">
+  <!-- Top Navigation Bar with Mobile Hamburger Menu -->
+  <nav class="navbar navbar-expand-lg fpl-navbar">
     <div class="container-fluid px-lg-4">
-      <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
-        <!-- Logo -->
-        <a href="index.php" class="brand-logo font-brand">
-          <i class="bi bi-shield-shaded text-success fs-3"></i>
-          <span>FPL<span style="color: var(--pl-green);">INTELLIGENCE</span></span>
-          <span class="brand-badge">LIVE 2026/27</span>
-        </a>
+      <!-- Logo -->
+      <a href="index.html" class="brand-logo font-brand navbar-brand">
+        <i class="bi bi-shield-shaded text-success fs-3"></i>
+        <span>FPL<span style="color: var(--pl-green);">INTELLIGENCE</span></span>
+        <span class="brand-badge">LIVE 2026/27</span>
+      </a>
 
+      <!-- Hamburger Toggler for Mobile -->
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarFPLContent" aria-controls="navbarFPLContent" aria-expanded="false" aria-label="Toggle navigation">
+        <i class="bi bi-list fs-2 text-success"></i>
+      </button>
+
+      <!-- Collapsible Navigation & Actions -->
+      <div class="collapse navbar-collapse" id="navbarFPLContent">
         <!-- Navigation Tabs -->
-        <ul class="nav nav-pills" id="fpl-main-tabs" role="tablist">
+        <ul class="nav nav-pills flex-column flex-lg-row mx-auto my-3 my-lg-0 gap-1 gap-lg-2" id="fpl-main-tabs" role="tablist">
           <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="tab-dashboard" data-bs-toggle="pill" data-bs-target="#dashboard-tab-pane" type="button" role="tab">
+            <button class="nav-link active w-100" id="tab-dashboard" data-bs-toggle="pill" data-bs-target="#dashboard-tab-pane" type="button" role="tab">
               <i class="bi bi-speedometer2"></i> Command Center
             </button>
           </li>
           <li class="nav-item" role="presentation">
-            <button class="nav-link" id="tab-pitch" data-bs-toggle="pill" data-bs-target="#pitch-tab-pane" type="button" role="tab">
+            <button class="nav-link w-100" id="tab-pitch" data-bs-toggle="pill" data-bs-target="#pitch-tab-pane" type="button" role="tab">
               <i class="bi bi-grid-1x2"></i> Pitch & Squad
             </button>
           </li>
           <li class="nav-item" role="presentation">
-            <button class="nav-link" id="tab-scout" data-bs-toggle="pill" data-bs-target="#scout-tab-pane" type="button" role="tab">
+            <button class="nav-link w-100" id="tab-scout" data-bs-toggle="pill" data-bs-target="#scout-tab-pane" type="button" role="tab">
               <i class="bi bi-search"></i> Player Scout
             </button>
           </li>
           <li class="nav-item" role="presentation">
-            <button class="nav-link" id="tab-strategy" data-bs-toggle="pill" data-bs-target="#strategy-tab-pane" type="button" role="tab">
+            <button class="nav-link w-100" id="tab-strategy" data-bs-toggle="pill" data-bs-target="#strategy-tab-pane" type="button" role="tab">
               <i class="bi bi-graph-up-arrow"></i> Strategy & FDR
             </button>
           </li>
         </ul>
 
         <!-- Action Controls & Import Manager -->
-        <div class="d-flex align-items-center gap-2">
-          <form id="form-load-manager" class="d-none d-md-flex align-items-center gap-1">
-            <input type="number" id="input-team-id" class="form-control form-control-sm form-control-dark" placeholder="FPL Team ID" style="width: 120px;" title="Enter your official FPL Manager/Team ID to load your squad">
-            <button type="submit" class="btn btn-sm btn-fpl-outline" title="Import Squad">
+        <div class="d-flex flex-column flex-lg-row align-items-stretch align-items-lg-center gap-2 mt-2 mt-lg-0">
+          <form id="form-load-manager" class="d-flex align-items-center gap-1">
+            <input type="number" id="input-team-id" class="form-control form-control-sm form-control-dark" placeholder="FPL Team ID" style="min-width: 120px;" title="Enter your official FPL Manager/Team ID">
+            <button type="submit" class="btn btn-sm btn-fpl-outline text-nowrap" title="Import Squad">
               <i class="bi bi-cloud-arrow-down"></i> Load
             </button>
           </form>
 
-          <button id="btn-refresh-data" class="btn btn-sm btn-fpl-green d-flex align-items-center gap-1" title="Fetch fresh data from official FPL API">
-            <i class="bi bi-arrow-repeat"></i> <span class="d-none d-sm-inline">Refresh Data</span>
+          <button id="btn-refresh-data" class="btn btn-sm btn-fpl-green d-flex align-items-center justify-content-center gap-1 text-nowrap" title="Fetch fresh data">
+            <i class="bi bi-arrow-repeat"></i> <span>Refresh Data</span>
           </button>
         </div>
       </div>

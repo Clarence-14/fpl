@@ -33,6 +33,20 @@ const FPLApp = {
         }
       });
     }
+
+    // Auto-collapse mobile navbar when a tab is selected
+    const navButtons = document.querySelectorAll('#fpl-main-tabs .nav-link');
+    const navbarCollapse = document.getElementById('navbarFPLContent');
+    if (navbarCollapse) {
+      navButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          if (window.innerWidth < 992) {
+            const bsCollapse = bootstrap.Collapse.getInstance(navbarCollapse);
+            if (bsCollapse) bsCollapse.hide();
+          }
+        });
+      });
+    }
   },
 
   // Load Data from PHP Backend with Static Fallback for GitHub Pages
