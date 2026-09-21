@@ -16,9 +16,34 @@ const FPLAdvisor = {
   setupEventListeners() {
     const dropzone = document.getElementById('screenshot-dropzone');
     const fileInput = document.getElementById('screenshot-file-input');
+    const browseBtn = document.getElementById('btn-browse-screenshot');
+
+    if (fileInput) {
+      fileInput.addEventListener('click', (e) => e.stopPropagation());
+
+      fileInput.addEventListener('change', (e) => {
+        if (e.target.files && e.target.files.length > 0) {
+          const file = e.target.files[0];
+          this.processImage(file);
+          fileInput.value = ''; // Reset so same file can be chosen again
+        }
+      });
+    }
 
     if (dropzone && fileInput) {
-      dropzone.addEventListener('click', () => fileInput.click());
+      dropzone.addEventListener('click', (e) => {
+        // Prevent recursive trigger if user clicked browse button
+        if (e.target !== browseBtn && !browseBtn?.contains(e.target)) {
+          fileInput.click();
+        }
+      });
+
+      if (browseBtn) {
+        browseBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          fileInput.click();
+        });
+      }
 
       dropzone.addEventListener('dragover', (e) => {
         e.preventDefault();
@@ -36,25 +61,26 @@ const FPLAdvisor = {
           this.processImage(e.dataTransfer.files[0]);
         }
       });
-
-      fileInput.addEventListener('change', (e) => {
-        if (e.target.files && e.target.files.length > 0) {
-          this.processImage(e.target.files[0]);
-        }
-      });
     }
 
     // Global paste listener (Ctrl + V)
     window.addEventListener('paste', (e) => {
-      const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+      const items = (e.clipboardData || e.originalEvent.clipboardData)?.items;
+      if (!items) return;
+
       for (const item of items) {
         if (item.kind === 'file' && item.type.includes('image')) {
           const file = item.getAsFile();
-          this.processImage(file);
-          // Show the modal if not already open
-          const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('screenshotModal'));
-          modal.show();
-          break;
+          if (file) {
+            // Show the modal if not already open
+            const modalEl = document.getElementById('screenshotModal');
+            if (modalEl) {
+              const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+              modal.show();
+            }
+            this.processImage(file);
+            break;
+          }
         }
       }
     });
@@ -65,6 +91,45 @@ const FPLAdvisor = {
       confirmBtn.addEventListener('click', () => {
         this.applyScannedSquad();
       });
+    }
+
+    // Manual Player Search in OCR Modal
+    const searchInput = document.getElementById('ocr-manual-search-input');
+    const searchBtn = document.getElementById('btn-ocr-manual-add');
+    const dropdown = document.getElementById('ocr-search-results-dropdown');
+
+    if (searchInput && dropdown) {
+      const handleSearch = () => {
+        const query = searchInput.value.trim().toLowerCase();
+        if (query.length < 2 || !FPLApp.data || !FPLApp.data.players) {
+          dropdown.style.display = 'none';
+          return;
+        }
+
+        const matches = FPLApp.data.players.filter(p => 
+          p.web_name.toLowerCase().includes(query) || 
+          p.second_name.toLowerCase().includes(query)
+        ).slice(0, 5);
+
+        if (matches.length === 0) {
+          dropdown.innerHTML = `<div class="p-2 text-muted small bg-dark">No player found matching "${query}"</div>`;
+          dropdown.style.display = 'block';
+          return;
+        }
+
+        dropdown.innerHTML = matches.map(p => `
+          <a href="javascript:void(0)" class="list-group-item list-group-item-action bg-dark text-white border-secondary p-2 d-flex justify-content-between align-items-center" onclick="FPLAdvisor.addPlayerManually(${p.id})">
+            <div>
+              <strong>${p.web_name}</strong> <small class="text-muted">(${p.team_short} · ${p.position} · £${p.price}m)</small>
+            </div>
+            <span class="badge bg-success">+ Add</span>
+          </a>
+        `).join('');
+        dropdown.style.display = 'block';
+      };
+
+      searchInput.addEventListener('input', handleSearch);
+      if (searchBtn) searchBtn.addEventListener('click', handleSearch);
     }
   },
 
@@ -80,9 +145,9 @@ const FPLAdvisor = {
     const previewImg = document.getElementById('ocr-image-preview');
 
     if (progressBox) progressBox.style.display = 'block';
-    if (previewContainer) previewContainer.style.display = 'none';
+    if (previewContainer) previewContainer.style.display = 'block'; // Show preview container immediately
 
-    // Show image preview
+    // Immediate image preview
     const reader = new FileReader();
     reader.onload = (e) => {
       if (previewImg) previewImg.src = e.target.result;
@@ -90,38 +155,49 @@ const FPLAdvisor = {
     reader.readAsDataURL(file);
 
     try {
+      progressText.textContent = 'Preparing image for OCR...';
+      progressBar.style.width = '20%';
+
       if (typeof Tesseract === 'undefined') {
-        throw new Error('Tesseract.js OCR library is still loading. Please try again in a few seconds.');
+        throw new Error('Tesseract OCR engine is loading. You can also add players manually below.');
       }
 
-      progressText.textContent = 'Initializing OCR neural network...';
-      progressBar.style.width = '15%';
+      progressText.textContent = 'Scanning screenshot & detecting players...';
+      progressBar.style.width = '45%';
 
-      const worker = await Tesseract.createWorker('eng');
+      const ret = await Tesseract.recognize(file, 'eng', {
+        logger: m => {
+          if (m.status === 'recognizing text' && m.progress) {
+            const pct = Math.round(m.progress * 100);
+            if (progressBar) progressBar.style.width = `${pct}%`;
+            if (progressText) progressText.textContent = `Analyzing text: ${pct}%`;
+          }
+        }
+      });
 
-      progressText.textContent = 'Scanning screenshot & detecting text...';
-      progressBar.style.width = '40%';
+      progressBar.style.width = '90%';
+      progressText.textContent = 'Matching recognized text with Premier League database...';
 
-      const ret = await worker.recognize(file);
-      await worker.terminate();
-
-      progressBar.style.width = '80%';
-      progressText.textContent = 'Matching recognized text with Premier League players...';
-
-      const recognizedText = ret.data.text;
+      const recognizedText = ret?.data?.text || '';
       const matched = this.matchPlayersFromText(recognizedText);
 
       progressBar.style.width = '100%';
       if (progressBox) progressBox.style.display = 'none';
-      if (previewContainer) previewContainer.style.display = 'block';
 
       this.scannedPlayers = matched;
       this.renderScannedResults(matched, recognizedText);
 
+      if (matched.length > 0) {
+        FPLApp.showToast(`Recognized ${matched.length} players from your screenshot!`, 'success');
+      } else {
+        FPLApp.showToast('Could not automatically match names. Use the search box below to add your players.', 'warning');
+      }
+
     } catch (err) {
-      console.error(err);
+      console.warn('OCR error:', err);
       if (progressBox) progressBox.style.display = 'none';
-      FPLApp.showToast(`OCR Scan Failed: ${err.message}`, 'danger');
+      FPLApp.showToast(`OCR Note: ${err.message}`, 'warning');
+      this.renderScannedResults(this.scannedPlayers, '');
     } finally {
       this.isProcessing = false;
     }
@@ -132,7 +208,6 @@ const FPLAdvisor = {
     if (!FPLApp.data || !FPLApp.data.players) return [];
 
     const allPlayers = FPLApp.data.players;
-    const lines = rawText.split('\n').map(l => l.trim()).filter(Boolean);
     const words = rawText.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter(w => w.length >= 3);
 
     const matched = [];
@@ -143,7 +218,6 @@ const FPLAdvisor = {
       const webNameLower = p.web_name.toLowerCase();
       const secondNameLower = p.second_name.toLowerCase();
 
-      // Check if word matches web_name or second_name
       const exactMatch = words.some(w => w === webNameLower || w === secondNameLower);
       if (exactMatch && !matchedIds.has(p.id)) {
         matched.push(p);
@@ -197,46 +271,66 @@ const FPLAdvisor = {
   },
 
   // Render matched players in the confirmation UI
-  renderScannedResults(matched, rawText) {
+  renderScannedResults(matched, rawText = '') {
     const listContainer = document.getElementById('ocr-matched-players-list');
     const countBadge = document.getElementById('ocr-matched-count');
     if (!listContainer) return;
 
-    if (countBadge) countBadge.textContent = `${matched.length} players detected`;
+    if (countBadge) countBadge.textContent = `${matched.length} players in list`;
 
     if (matched.length === 0) {
       listContainer.innerHTML = `
-        <div class="alert alert-warning small">
-          <i class="bi bi-exclamation-triangle me-1"></i> No exact player names recognized. Ensure your screenshot shows clear player names on the pitch.
-          <details class="mt-2">
-            <summary class="text-muted">View Raw Detected Text</summary>
-            <pre class="bg-dark p-2 text-white small mt-1" style="max-height: 120px; overflow-y: auto;">${rawText}</pre>
-          </details>
+        <div class="alert alert-warning small p-2">
+          <i class="bi bi-info-circle me-1"></i> No players in squad list yet. Upload a screenshot above, or search and add players manually below.
         </div>
       `;
       return;
     }
 
     listContainer.innerHTML = `
-      <div class="row g-2 mb-3">
+      <div class="row g-2 mb-2">
         ${matched.map(p => `
           <div class="col-6 col-sm-4 col-md-3">
             <div class="p-2 rounded bg-dark border border-secondary d-flex justify-content-between align-items-center">
               <div>
-                <div class="fw-bold small text-truncate" style="max-width: 90px;">${p.web_name}</div>
+                <div class="fw-bold small text-truncate" style="max-width: 90px;" title="${p.web_name}">${p.web_name}</div>
                 <small class="text-muted">${p.team_short} · ${p.position}</small>
               </div>
-              <button class="btn btn-sm btn-link text-danger p-0" onclick="FPLAdvisor.removeScannedPlayer(${p.id})">
-                <i class="bi bi-x"></i>
+              <button type="button" class="btn btn-sm btn-link text-danger p-0 ms-1" onclick="FPLAdvisor.removeScannedPlayer(${p.id})" title="Remove">
+                <i class="bi bi-x-circle-fill"></i>
               </button>
             </div>
           </div>
         `).join('')}
       </div>
-      <div class="small text-muted mb-2">
-        <i class="bi bi-info-circle me-1"></i> You can remove any misidentified players or confirm to load them onto your pitch and generate your custom Gameweek Advice Report.
-      </div>
     `;
+  },
+
+  // Add player manually from search
+  addPlayerManually(id) {
+    if (!FPLApp.data || !FPLApp.data.players) return;
+    const player = FPLApp.data.players.find(p => p.id === id);
+    if (!player) return;
+
+    if (this.scannedPlayers.some(p => p.id === player.id)) {
+      FPLApp.showToast(`${player.web_name} is already in your list.`, 'info');
+      return;
+    }
+
+    if (this.scannedPlayers.length >= 15) {
+      FPLApp.showToast('Squad already has 15 players.', 'warning');
+      return;
+    }
+
+    this.scannedPlayers.push(player);
+    this.renderScannedResults(this.scannedPlayers);
+
+    const dropdown = document.getElementById('ocr-search-results-dropdown');
+    const searchInput = document.getElementById('ocr-manual-search-input');
+    if (dropdown) dropdown.style.display = 'none';
+    if (searchInput) searchInput.value = '';
+
+    FPLApp.showToast(`Added ${player.web_name}`, 'success');
   },
 
   removeScannedPlayer(id) {
@@ -247,7 +341,7 @@ const FPLAdvisor = {
   // Apply the scanned squad to FPLPitch and generate the personalized advice
   applyScannedSquad() {
     if (this.scannedPlayers.length === 0) {
-      FPLApp.showToast('No players to apply.', 'warning');
+      FPLApp.showToast('Please upload a screenshot or add players to the list before loading.', 'warning');
       return;
     }
 
@@ -281,14 +375,18 @@ const FPLAdvisor = {
 
     // Close screenshot modal
     const modalEl = document.getElementById('screenshotModal');
-    const modal = bootstrap.Modal.getInstance(modalEl);
-    if (modal) modal.hide();
+    if (modalEl) {
+      const modal = bootstrap.Modal.getInstance(modalEl);
+      if (modal) modal.hide();
+    }
 
     // Switch to Pitch tab
     const pitchTabBtn = document.querySelector('button[data-bs-target="#pitch-tab-pane"]');
     if (pitchTabBtn) {
       bootstrap.Tab.getOrCreateInstance(pitchTabBtn).show();
     }
+
+    FPLApp.showToast(`Loaded ${this.scannedPlayers.length} players onto your pitch!`, 'success');
 
     // Open Advice Modal
     this.generateAdviceReport(this.scannedPlayers);
@@ -315,10 +413,7 @@ const FPLAdvisor = {
     // 3. Fixture Traps (Players facing FDR 4 or 5)
     const fixtureTraps = squad.filter(p => p.next_opponent && p.next_opponent.difficulty >= 4);
 
-    // 4. Bench Decisions (Bench players with easy fixtures or high form)
-    const benchOpportunities = squad.filter(p => p.next_opponent && p.next_opponent.difficulty <= 2 && p.form >= 5.0);
-
-    // 5. Transfer Priority (Lowest SBS or injured player with tough run)
+    // 4. Transfer Priority (Lowest SBS or injured player with tough run)
     const sellTarget = [...squad].sort((a, b) => a.smart_buy_score - b.smart_buy_score)[0];
     let buyTarget = null;
     if (sellTarget) {

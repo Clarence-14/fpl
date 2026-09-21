@@ -586,12 +586,17 @@
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body p-4">
+          <!-- Hidden File Input -->
+          <input type="file" id="screenshot-file-input" accept="image/*" style="display: none;">
+
           <!-- Dropzone -->
           <div id="screenshot-dropzone" class="screenshot-dropzone mb-3">
-            <input type="file" id="screenshot-file-input" accept="image/*" style="display: none;">
             <i class="bi bi-cloud-arrow-up fs-1 text-success mb-2 d-block"></i>
             <h6 class="fw-bold text-white mb-1">Click to browse, drag & drop, or paste (Ctrl + V)</h6>
-            <small class="text-muted">Take a screenshot of your FPL squad from the official app or website</small>
+            <small class="text-muted d-block mb-2">Upload a screenshot of your FPL squad from the official app or website</small>
+            <button type="button" id="btn-browse-screenshot" class="btn btn-sm btn-fpl-outline">
+              <i class="bi bi-folder2-open me-1"></i> Choose Screenshot File
+            </button>
           </div>
 
           <!-- OCR Processing Box -->
@@ -616,6 +621,18 @@
                   <span class="badge bg-success" id="ocr-matched-count">0 players detected</span>
                 </div>
                 <div id="ocr-matched-players-list"></div>
+
+                <!-- Add player manually helper -->
+                <div class="mt-2 pt-2 border-top border-secondary">
+                  <small class="text-muted d-block mb-1">Missing a player? Type to search and add:</small>
+                  <div class="input-group input-group-sm">
+                    <input type="text" id="ocr-manual-search-input" class="form-control form-control-dark" placeholder="Search player name...">
+                    <button type="button" id="btn-ocr-manual-add" class="btn btn-fpl-outline">
+                      <i class="bi bi-plus"></i> Add
+                    </button>
+                  </div>
+                  <div id="ocr-search-results-dropdown" class="list-group list-group-flush mt-1" style="max-height: 140px; overflow-y: auto; display: none;"></div>
+                </div>
               </div>
             </div>
           </div>
