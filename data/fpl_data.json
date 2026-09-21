@@ -1,7 +1,7 @@
 {
     "success": true,
     "cached": false,
-    "last_updated": "2026-09-21 17:52:14",
+    "last_updated": "2026-09-21 17:57:00",
     "current_gameweek": 5,
     "next_gameweek": 6,
     "gameweeks": [
@@ -116,8 +116,8 @@
         {
             "id": 10,
             "name": "Gameweek 10",
-            "deadline_time": "2026-11-07T13:30:00Z",
-            "deadline_time_epoch": 1794058200,
+            "deadline_time": "2026-11-06T18:30:00Z",
+            "deadline_time_epoch": 1793989800,
             "average_entry_score": 0,
             "highest_score": null,
             "is_previous": false,
@@ -128,8 +128,8 @@
         {
             "id": 11,
             "name": "Gameweek 11",
-            "deadline_time": "2026-11-21T13:30:00Z",
-            "deadline_time_epoch": 1795267800,
+            "deadline_time": "2026-11-21T11:00:00Z",
+            "deadline_time_epoch": 1795258800,
             "average_entry_score": 0,
             "highest_score": null,
             "is_previous": false,
@@ -140,8 +140,8 @@
         {
             "id": 12,
             "name": "Gameweek 12",
-            "deadline_time": "2026-11-28T13:30:00Z",
-            "deadline_time_epoch": 1795872600,
+            "deadline_time": "2026-11-27T18:30:00Z",
+            "deadline_time_epoch": 1795804200,
             "average_entry_score": 0,
             "highest_score": null,
             "is_previous": false,
@@ -521,7 +521,7 @@
                     "opponent_name": "NEW",
                     "is_home": false,
                     "difficulty": 3,
-                    "kickoff_time": "2026-11-21T15:00:00Z"
+                    "kickoff_time": "2026-11-21T17:30:00Z"
                 },
                 {
                     "event": 12,
@@ -529,7 +529,7 @@
                     "opponent_name": "MCI",
                     "is_home": true,
                     "difficulty": 4,
-                    "kickoff_time": "2026-11-28T15:00:00Z"
+                    "kickoff_time": "2026-11-29T16:30:00Z"
                 },
                 {
                     "event": 13,
@@ -793,7 +793,7 @@
                     "opponent_name": "MUN",
                     "is_home": false,
                     "difficulty": 4,
-                    "kickoff_time": "2026-11-07T15:00:00Z"
+                    "kickoff_time": "2026-11-08T16:30:00Z"
                 },
                 {
                     "event": 11,
@@ -809,7 +809,7 @@
                     "opponent_name": "IPS",
                     "is_home": false,
                     "difficulty": 2,
-                    "kickoff_time": "2026-11-28T15:00:00Z"
+                    "kickoff_time": "2026-11-28T17:30:00Z"
                 },
                 {
                     "event": 13,
@@ -1073,7 +1073,7 @@
                     "opponent_name": "IPS",
                     "is_home": false,
                     "difficulty": 2,
-                    "kickoff_time": "2026-11-07T15:00:00Z"
+                    "kickoff_time": "2026-11-08T14:00:00Z"
                 },
                 {
                     "event": 11,
@@ -1089,7 +1089,7 @@
                     "opponent_name": "FUL",
                     "is_home": false,
                     "difficulty": 3,
-                    "kickoff_time": "2026-11-28T15:00:00Z"
+                    "kickoff_time": "2026-11-29T14:05:00Z"
                 },
                 {
                     "event": 13,
@@ -1353,7 +1353,7 @@
                     "opponent_name": "BHA",
                     "is_home": false,
                     "difficulty": 3,
-                    "kickoff_time": "2026-11-07T15:00:00Z"
+                    "kickoff_time": "2026-11-08T14:00:00Z"
                 },
                 {
                     "event": 11,
@@ -1361,7 +1361,7 @@
                     "opponent_name": "EVE",
                     "is_home": true,
                     "difficulty": 3,
-                    "kickoff_time": "2026-11-21T15:00:00Z"
+                    "kickoff_time": "2026-11-23T20:00:00Z"
                 },
                 {
                     "event": 12,
@@ -1633,7 +1633,7 @@
                     "opponent_name": "BRE",
                     "is_home": true,
                     "difficulty": 3,
-                    "kickoff_time": "2026-11-07T15:00:00Z"
+                    "kickoff_time": "2026-11-08T14:00:00Z"
                 },
                 {
                     "event": 11,
@@ -1641,7 +1641,7 @@
                     "opponent_name": "HUL",
                     "is_home": false,
                     "difficulty": 2,
-                    "kickoff_time": "2026-11-21T15:00:00Z"
+                    "kickoff_time": "2026-11-22T14:00:00Z"
                 },
                 {
                     "event": 12,
@@ -1649,7 +1649,7 @@
                     "opponent_name": "NEW",
                     "is_home": true,
                     "difficulty": 2,
-                    "kickoff_time": "2026-11-28T15:00:00Z"
+                    "kickoff_time": "2026-11-29T14:05:00Z"
                 },
                 {
                     "event": 13,
@@ -1913,7 +1913,7 @@
                     "opponent_name": "SUN",
                     "is_home": false,
                     "difficulty": 3,
-                    "kickoff_time": "2026-11-07T15:00:00Z"
+                    "kickoff_time": "2026-11-08T14:00:00Z"
                 },
                 {
                     "event": 11,
@@ -1929,7 +1929,7 @@
                     "opponent_name": "NFO",
                     "is_home": false,
                     "difficulty": 3,
-                    "kickoff_time": "2026-11-28T15:00:00Z"
+                    "kickoff_time": "2026-11-27T20:00:00Z"
                 },
                 {
                     "event": 13,
@@ -2193,7 +2193,7 @@
                     "opponent_name": "EVE",
                     "is_home": false,
                     "difficulty": 3,
-                    "kickoff_time": "2026-11-07T15:00:00Z"
+                    "kickoff_time": "2026-11-06T20:00:00Z"
                 },
                 {
                     "event": 11,
@@ -2473,7 +2473,7 @@
                     "opponent_name": "LIV",
                     "is_home": true,
                     "difficulty": 4,
-                    "kickoff_time": "2026-11-07T15:00:00Z"
+                    "kickoff_time": "2026-11-08T14:00:00Z"
                 },
                 {
                     "event": 11,
@@ -2489,7 +2489,7 @@
                     "opponent_name": "HUL",
                     "is_home": true,
                     "difficulty": 2,
-                    "kickoff_time": "2026-11-28T15:00:00Z"
+                    "kickoff_time": "2026-11-29T14:05:00Z"
                 },
                 {
                     "event": 13,
@@ -2753,7 +2753,7 @@
                     "opponent_name": "COV",
                     "is_home": true,
                     "difficulty": 2,
-                    "kickoff_time": "2026-11-07T15:00:00Z"
+                    "kickoff_time": "2026-11-06T20:00:00Z"
                 },
                 {
                     "event": 11,
@@ -2761,7 +2761,7 @@
                     "opponent_name": "BRE",
                     "is_home": false,
                     "difficulty": 3,
-                    "kickoff_time": "2026-11-21T15:00:00Z"
+                    "kickoff_time": "2026-11-23T20:00:00Z"
                 },
                 {
                     "event": 12,
@@ -2769,7 +2769,7 @@
                     "opponent_name": "LIV",
                     "is_home": true,
                     "difficulty": 4,
-                    "kickoff_time": "2026-11-28T15:00:00Z"
+                    "kickoff_time": "2026-11-29T12:00:00Z"
                 },
                 {
                     "event": 13,
@@ -3041,7 +3041,7 @@
                     "opponent_name": "MCI",
                     "is_home": false,
                     "difficulty": 5,
-                    "kickoff_time": "2026-11-21T15:00:00Z"
+                    "kickoff_time": "2026-11-21T12:30:00Z"
                 },
                 {
                     "event": 12,
@@ -3049,7 +3049,7 @@
                     "opponent_name": "BOU",
                     "is_home": true,
                     "difficulty": 3,
-                    "kickoff_time": "2026-11-28T15:00:00Z"
+                    "kickoff_time": "2026-11-29T14:05:00Z"
                 },
                 {
                     "event": 13,
@@ -3321,7 +3321,7 @@
                     "opponent_name": "BHA",
                     "is_home": true,
                     "difficulty": 2,
-                    "kickoff_time": "2026-11-21T15:00:00Z"
+                    "kickoff_time": "2026-11-22T14:00:00Z"
                 },
                 {
                     "event": 12,
@@ -3329,7 +3329,7 @@
                     "opponent_name": "CRY",
                     "is_home": false,
                     "difficulty": 3,
-                    "kickoff_time": "2026-11-28T15:00:00Z"
+                    "kickoff_time": "2026-11-29T14:05:00Z"
                 },
                 {
                     "event": 13,
@@ -3593,7 +3593,7 @@
                     "opponent_name": "BOU",
                     "is_home": true,
                     "difficulty": 3,
-                    "kickoff_time": "2026-11-07T15:00:00Z"
+                    "kickoff_time": "2026-11-08T14:00:00Z"
                 },
                 {
                     "event": 11,
@@ -3609,7 +3609,7 @@
                     "opponent_name": "AVL",
                     "is_home": true,
                     "difficulty": 3,
-                    "kickoff_time": "2026-11-28T15:00:00Z"
+                    "kickoff_time": "2026-11-28T17:30:00Z"
                 },
                 {
                     "event": 13,
@@ -3873,7 +3873,7 @@
                     "opponent_name": "TOT",
                     "is_home": true,
                     "difficulty": 3,
-                    "kickoff_time": "2026-11-07T15:00:00Z"
+                    "kickoff_time": "2026-11-07T12:30:00Z"
                 },
                 {
                     "event": 11,
@@ -4153,7 +4153,7 @@
                     "opponent_name": "CRY",
                     "is_home": false,
                     "difficulty": 3,
-                    "kickoff_time": "2026-11-07T15:00:00Z"
+                    "kickoff_time": "2026-11-08T14:00:00Z"
                 },
                 {
                     "event": 11,
@@ -4161,7 +4161,7 @@
                     "opponent_name": "MUN",
                     "is_home": true,
                     "difficulty": 4,
-                    "kickoff_time": "2026-11-21T15:00:00Z"
+                    "kickoff_time": "2026-11-22T16:30:00Z"
                 },
                 {
                     "event": 12,
@@ -4169,7 +4169,7 @@
                     "opponent_name": "EVE",
                     "is_home": false,
                     "difficulty": 3,
-                    "kickoff_time": "2026-11-28T15:00:00Z"
+                    "kickoff_time": "2026-11-29T12:00:00Z"
                 },
                 {
                     "event": 13,
@@ -4433,7 +4433,7 @@
                     "opponent_name": "NFO",
                     "is_home": false,
                     "difficulty": 3,
-                    "kickoff_time": "2026-11-07T15:00:00Z"
+                    "kickoff_time": "2026-11-07T17:30:00Z"
                 },
                 {
                     "event": 11,
@@ -4441,7 +4441,7 @@
                     "opponent_name": "FUL",
                     "is_home": true,
                     "difficulty": 2,
-                    "kickoff_time": "2026-11-21T15:00:00Z"
+                    "kickoff_time": "2026-11-21T12:30:00Z"
                 },
                 {
                     "event": 12,
@@ -4449,7 +4449,7 @@
                     "opponent_name": "ARS",
                     "is_home": false,
                     "difficulty": 5,
-                    "kickoff_time": "2026-11-28T15:00:00Z"
+                    "kickoff_time": "2026-11-29T16:30:00Z"
                 },
                 {
                     "event": 13,
@@ -4713,7 +4713,7 @@
                     "opponent_name": "AVL",
                     "is_home": true,
                     "difficulty": 3,
-                    "kickoff_time": "2026-11-07T15:00:00Z"
+                    "kickoff_time": "2026-11-08T16:30:00Z"
                 },
                 {
                     "event": 11,
@@ -4721,7 +4721,7 @@
                     "opponent_name": "LIV",
                     "is_home": false,
                     "difficulty": 4,
-                    "kickoff_time": "2026-11-21T15:00:00Z"
+                    "kickoff_time": "2026-11-22T16:30:00Z"
                 },
                 {
                     "event": 12,
@@ -5001,7 +5001,7 @@
                     "opponent_name": "ARS",
                     "is_home": true,
                     "difficulty": 4,
-                    "kickoff_time": "2026-11-21T15:00:00Z"
+                    "kickoff_time": "2026-11-21T17:30:00Z"
                 },
                 {
                     "event": 12,
@@ -5009,7 +5009,7 @@
                     "opponent_name": "BHA",
                     "is_home": false,
                     "difficulty": 3,
-                    "kickoff_time": "2026-11-28T15:00:00Z"
+                    "kickoff_time": "2026-11-29T14:05:00Z"
                 },
                 {
                     "event": 13,
@@ -5273,7 +5273,7 @@
                     "opponent_name": "MCI",
                     "is_home": true,
                     "difficulty": 4,
-                    "kickoff_time": "2026-11-07T15:00:00Z"
+                    "kickoff_time": "2026-11-07T17:30:00Z"
                 },
                 {
                     "event": 11,
@@ -5289,7 +5289,7 @@
                     "opponent_name": "CHE",
                     "is_home": true,
                     "difficulty": 4,
-                    "kickoff_time": "2026-11-28T15:00:00Z"
+                    "kickoff_time": "2026-11-27T20:00:00Z"
                 },
                 {
                     "event": 13,
@@ -5553,7 +5553,7 @@
                     "opponent_name": "LEE",
                     "is_home": false,
                     "difficulty": 3,
-                    "kickoff_time": "2026-11-07T15:00:00Z"
+                    "kickoff_time": "2026-11-07T12:30:00Z"
                 },
                 {
                     "event": 11,
@@ -5569,7 +5569,7 @@
                     "opponent_name": "SUN",
                     "is_home": false,
                     "difficulty": 3,
-                    "kickoff_time": "2026-11-28T15:00:00Z"
+                    "kickoff_time": "2026-11-29T14:05:00Z"
                 },
                 {
                     "event": 13,
@@ -5833,7 +5833,7 @@
                     "opponent_name": "CHE",
                     "is_home": true,
                     "difficulty": 4,
-                    "kickoff_time": "2026-11-07T15:00:00Z"
+                    "kickoff_time": "2026-11-08T14:00:00Z"
                 },
                 {
                     "event": 11,
@@ -5849,7 +5849,7 @@
                     "opponent_name": "TOT",
                     "is_home": true,
                     "difficulty": 3,
-                    "kickoff_time": "2026-11-28T15:00:00Z"
+                    "kickoff_time": "2026-11-29T14:05:00Z"
                 },
                 {
                     "event": 13,
@@ -6159,7 +6159,7 @@
                     "opponent_name": "EVE",
                     "is_home": false,
                     "difficulty": 3,
-                    "kickoff_time": "2026-11-07T15:00:00Z"
+                    "kickoff_time": "2026-11-06T20:00:00Z"
                 }
             ]
         },
@@ -6208,7 +6208,7 @@
                     "opponent_name": "CHE",
                     "is_home": true,
                     "difficulty": 4,
-                    "kickoff_time": "2026-11-07T15:00:00Z"
+                    "kickoff_time": "2026-11-08T14:00:00Z"
                 }
             ]
         },
@@ -6355,7 +6355,7 @@
                     "opponent_name": "LIV",
                     "is_home": true,
                     "difficulty": 4,
-                    "kickoff_time": "2026-11-07T15:00:00Z"
+                    "kickoff_time": "2026-11-08T14:00:00Z"
                 }
             ]
         },
@@ -6404,7 +6404,7 @@
                     "opponent_name": "SUN",
                     "is_home": false,
                     "difficulty": 3,
-                    "kickoff_time": "2026-11-07T15:00:00Z"
+                    "kickoff_time": "2026-11-08T14:00:00Z"
                 }
             ]
         },
@@ -6502,7 +6502,7 @@
                     "opponent_name": "CRY",
                     "is_home": false,
                     "difficulty": 3,
-                    "kickoff_time": "2026-11-07T15:00:00Z"
+                    "kickoff_time": "2026-11-08T14:00:00Z"
                 }
             ]
         },
@@ -6551,7 +6551,7 @@
                     "opponent_name": "AVL",
                     "is_home": true,
                     "difficulty": 3,
-                    "kickoff_time": "2026-11-07T15:00:00Z"
+                    "kickoff_time": "2026-11-08T16:30:00Z"
                 }
             ]
         },
@@ -6600,7 +6600,7 @@
                     "opponent_name": "MCI",
                     "is_home": true,
                     "difficulty": 4,
-                    "kickoff_time": "2026-11-07T15:00:00Z"
+                    "kickoff_time": "2026-11-07T17:30:00Z"
                 }
             ]
         },
@@ -6649,7 +6649,7 @@
                     "opponent_name": "IPS",
                     "is_home": false,
                     "difficulty": 2,
-                    "kickoff_time": "2026-11-07T15:00:00Z"
+                    "kickoff_time": "2026-11-08T14:00:00Z"
                 }
             ]
         },
@@ -6698,7 +6698,7 @@
                     "opponent_name": "BOU",
                     "is_home": true,
                     "difficulty": 3,
-                    "kickoff_time": "2026-11-07T15:00:00Z"
+                    "kickoff_time": "2026-11-08T14:00:00Z"
                 }
             ]
         },
@@ -6747,7 +6747,7 @@
                     "opponent_name": "NFO",
                     "is_home": false,
                     "difficulty": 3,
-                    "kickoff_time": "2026-11-07T15:00:00Z"
+                    "kickoff_time": "2026-11-07T17:30:00Z"
                 }
             ]
         },
@@ -6796,7 +6796,7 @@
                     "opponent_name": "MUN",
                     "is_home": false,
                     "difficulty": 4,
-                    "kickoff_time": "2026-11-07T15:00:00Z"
+                    "kickoff_time": "2026-11-08T16:30:00Z"
                 }
             ]
         },
@@ -6845,7 +6845,7 @@
                     "opponent_name": "BHA",
                     "is_home": false,
                     "difficulty": 3,
-                    "kickoff_time": "2026-11-07T15:00:00Z"
+                    "kickoff_time": "2026-11-08T14:00:00Z"
                 }
             ]
         },
@@ -6894,7 +6894,7 @@
                     "opponent_name": "LEE",
                     "is_home": false,
                     "difficulty": 3,
-                    "kickoff_time": "2026-11-07T15:00:00Z"
+                    "kickoff_time": "2026-11-07T12:30:00Z"
                 }
             ]
         },
@@ -6943,7 +6943,7 @@
                     "opponent_name": "BRE",
                     "is_home": true,
                     "difficulty": 3,
-                    "kickoff_time": "2026-11-07T15:00:00Z"
+                    "kickoff_time": "2026-11-08T14:00:00Z"
                 }
             ]
         },
@@ -6992,7 +6992,7 @@
                     "opponent_name": "COV",
                     "is_home": true,
                     "difficulty": 2,
-                    "kickoff_time": "2026-11-07T15:00:00Z"
+                    "kickoff_time": "2026-11-06T20:00:00Z"
                 }
             ]
         },
@@ -7041,7 +7041,7 @@
                     "opponent_name": "TOT",
                     "is_home": true,
                     "difficulty": 3,
-                    "kickoff_time": "2026-11-07T15:00:00Z"
+                    "kickoff_time": "2026-11-07T12:30:00Z"
                 }
             ]
         }

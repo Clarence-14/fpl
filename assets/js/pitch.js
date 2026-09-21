@@ -459,8 +459,16 @@ const FPLPitch = {
     try {
       const response = await fetch(`api/get_manager.php?team_id=${teamId}`);
       if (!response.ok) {
-        const errJson = await response.json();
-        throw new Error(errJson.error || 'Failed to fetch manager data');
+        // If 404 or 405 (typical on static GitHub Pages where PHP cannot run)
+        if (response.status === 404 || response.status === 405) {
+          throw new Error('GITHUB_PAGES_STATIC_MODE');
+        }
+        let errMsg = 'Failed to fetch manager data';
+        try {
+          const errJson = await response.json();
+          errMsg = errJson.error || errMsg;
+        } catch (e) {}
+        throw new Error(errMsg);
       }
 
       const res = await response.json();
@@ -511,10 +519,61 @@ const FPLPitch = {
         document.getElementById('manager-overall-rank').textContent = res.manager.overall_rank ? res.manager.overall_rank.toLocaleString() : '-';
       }
     } catch (err) {
-      console.error(err);
-      FPLApp.showToast(`Manager Load Error: ${err.message}`, 'danger');
+      console.warn(err);
+      if (err.message === 'GITHUB_PAGES_STATIC_MODE') {
+        // Show informative modal explaining why and giving the solution
+        this.showStaticModeManagerModal();
+      } else {
+        FPLApp.showToast(`Manager Load Error: ${err.message}`, 'danger');
+      }
     } finally {
       if (spinner) spinner.style.display = 'none';
     }
+  },
+
+  // Modal explaining GitHub Pages static limitation & directing to Screenshot scanner
+  showStaticModeManagerModal() {
+    const modalHtml = `
+      <div class="modal fade" id="staticModeModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content modal-content-dark">
+            <div class="modal-header modal-header-dark">
+              <h5 class="modal-title font-brand text-white">
+                <i class="bi bi-info-circle text-warning me-2"></i>Loading on GitHub Pages
+              </h5>
+              <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4 text-white">
+              <p>
+                Because <strong>GitHub Pages is a static host</strong> (it doesn't have a backend PHP server), direct FPL Team ID loading is blocked by the Premier League's browser security (CORS) rules.
+              </p>
+              <div class="p-3 rounded bg-dark border border-secondary mb-3">
+                <h6 class="fw-bold text-success mb-2"><i class="bi bi-camera-fill me-1"></i> Use the Screenshot Scanner Instead!</h6>
+                <p class="small text-muted mb-2">
+                  You can upload or paste a screenshot of your team from the FPL app or website. Our built-in OCR will automatically detect your players and give you custom advice.
+                </p>
+                <button class="btn btn-sm btn-fpl-green w-100" onclick="bootstrap.Modal.getInstance(document.getElementById('staticModeModal')).hide(); bootstrap.Modal.getOrCreateInstance(document.getElementById('screenshotModal')).show();">
+                  <i class="bi bi-camera me-1"></i> Scan Squad Screenshot
+                </button>
+              </div>
+              <small class="text-muted">
+                <em>Note: If you host this on Vercel or locally in XAMPP, Team ID direct loading works automatically via the included PHP backend.</em>
+              </small>
+            </div>
+            <div class="modal-footer modal-footer-dark">
+              <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // Remove existing if any
+    const existing = document.getElementById('staticModeModal');
+    if (existing) existing.remove();
+
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    const modal = new bootstrap.Modal(document.getElementById('staticModeModal'));
+    modal.show();
   }
 };
