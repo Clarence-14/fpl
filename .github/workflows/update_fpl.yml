@@ -26,8 +26,18 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Fetch fresh FPL data from official API
+      - name: Fetch fresh FPL data and export static bundle
         run: |
+          if command -v php >/dev/null 2>&1; then
+            echo "Running php export_static.php..."
+            if php export_static.php; then
+              echo "PHP export completed successfully."
+              exit 0
+            else
+              echo "PHP export exited with an error, falling back to Node.js processor..."
+            fi
+          fi
+
           echo "Fetching FPL bootstrap-static data..."
           curl -sS -f -o /tmp/bootstrap.json \
             -H "User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36" \
@@ -43,7 +53,7 @@ jobs:
             echo "Warning: Could not fetch fixtures data"
           }
 
-          echo "Processing data with Node.js..."
+          echo "Processing data with Node.js fallback..."
           node -e "
             const fs = require('fs');
             try {
@@ -95,41 +105,40 @@ jobs:
                 return { team_id: t.id, team_name: t.name, team_short: t.short_name, avg_fdr_3: avg3 ? parseFloat(avg3) : 3, avg_fdr_5: avg5 ? parseFloat(avg5) : 3, fixtures: fx };
               });
 
-              // Process players
-              const players = bootstrap.elements
-                .filter(p => p.minutes > 0 || p.total_points > 0 || parseFloat(p.form) > 0)
-                .map(p => {
-                  const team = teams.find(t => t.id === p.team);
-                  const fx = teamFixtures[p.team] || [];
-                  const nextOpp = fx[0] || null;
-                  const avgFdr3 = fx.length >= 3 ? parseFloat((fx.slice(0,3).reduce((s,f)=>s+f.difficulty,0)/3).toFixed(2)) : 3;
-                  const mins = p.minutes || 1;
-                  const xgi90 = parseFloat((((parseFloat(p.expected_goals)||0)+(parseFloat(p.expected_assists)||0))/mins*90).toFixed(2));
-                  const form = parseFloat(p.form) || 0;
-                  const fdrBonus = Math.max(0, (3 - avgFdr3) * 2);
-                  const homeBonus = (nextOpp && nextOpp.is_home) ? 0.5 : 0;
-                  const sbs = parseFloat((form * 3.5 + fdrBonus * 3 + xgi90 * 25 + (p.value_form || 0) * 1.5).toFixed(1));
-                  const capScore = parseFloat((form * 3.5 + fdrBonus * 3 + xgi90 * 25 + homeBonus * 10).toFixed(1));
+              // Process all players (including 0-minute/backup players like Dubravka)
+              const players = bootstrap.elements.map(p => {
+                const team = teams.find(t => t.id === p.team);
+                const fx = teamFixtures[p.team] || [];
+                const nextOpp = fx[0] || null;
+                const avgFdr3 = fx.length >= 3 ? parseFloat((fx.slice(0,3).reduce((s,f)=>s+f.difficulty,0)/3).toFixed(2)) : 3;
+                const mins = p.minutes || 0;
+                const xgi90 = mins > 0 ? parseFloat((((parseFloat(p.expected_goals)||0)+(parseFloat(p.expected_assists)||0))/mins*90).toFixed(2)) : 0;
+                const form = parseFloat(p.form) || 0;
+                const fdrBonus = Math.max(0, (3 - avgFdr3) * 2);
+                const homeBonus = (nextOpp && nextOpp.is_home) ? 0.5 : 0;
+                const sbs = parseFloat((form * 3.5 + fdrBonus * 3 + xgi90 * 25 + (parseFloat(p.value_form) || 0) * 1.5).toFixed(1));
+                const capScore = parseFloat((form * 3.5 + fdrBonus * 3 + xgi90 * 25 + homeBonus * 10).toFixed(1));
 
-                  return {
-                    id: p.id, first_name: p.first_name, second_name: p.second_name,
-                    web_name: p.web_name, team_id: p.team,
-                    team_name: team?.name || '', team_short: team?.short_name || '',
-                    position: posMap[p.element_type] || 'MID',
-                    price: parseFloat((p.now_cost / 10).toFixed(1)),
-                    form: form, total_points: p.total_points,
-                    xgi_per_90: xgi90, ict_index: parseFloat(p.ict_index) || 0,
-                    selected_by_percent: parseFloat(p.selected_by_percent) || 0,
-                    transfers_in_event: p.transfers_in_event || 0,
-                    transfers_out_event: p.transfers_out_event || 0,
-                    minutes: p.minutes, goals_scored: p.goals_scored,
-                    assists: p.assists, clean_sheets: p.clean_sheets,
-                    status: p.status, news: p.news || '',
-                    smart_buy_score: sbs, captaincy_score: capScore,
-                    avg_fdr_3: avgFdr3, value_form: parseFloat(p.value_form) || 0,
-                    next_opponent: nextOpp
-                  };
-                });
+                return {
+                  id: p.id, first_name: p.first_name, second_name: p.second_name,
+                  web_name: p.web_name, team_id: p.team,
+                  team_name: team?.name || '', team_short: team?.short_name || '',
+                  position: posMap[p.element_type] || 'MID',
+                  price: parseFloat((p.now_cost / 10).toFixed(1)),
+                  form: form, total_points: p.total_points,
+                  xgi_per_90: xgi90, ict_index: parseFloat(p.ict_index) || 0,
+                  selected_by_percent: parseFloat(p.selected_by_percent) || 0,
+                  transfers_in_event: p.transfers_in_event || 0,
+                  transfers_out_event: p.transfers_out_event || 0,
+                  minutes: p.minutes, goals_scored: p.goals_scored,
+                  assists: p.assists, clean_sheets: p.clean_sheets,
+                  status: p.status, news: p.news || '',
+                  smart_buy_score: sbs, captaincy_score: capScore,
+                  avg_fdr_3: avgFdr3, value_form: parseFloat(p.value_form) || 0,
+                  next_opponent: nextOpp,
+                  photo: 'https://resources.premierleague.com/premierleague/photos/players/110x140/p' + p.code + '.png'
+                };
+              });
 
               players.sort((a,b) => b.smart_buy_score - a.smart_buy_score);
 
@@ -151,7 +160,7 @@ jobs:
                 cached: false
               };
 
-              fs.writeFileSync('data/fpl_data.json', JSON.stringify(output));
+              fs.writeFileSync('data/fpl_data.json', JSON.stringify(output, null, 2));
               console.log('Successfully processed ' + players.length + ' players');
             } catch (err) {
               console.error('Processing error:', err.message);
