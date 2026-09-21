@@ -485,15 +485,34 @@ body, p, span, div, h1, h2, h3, h4, h5, h6, td, th, li, label {
   box-shadow: 0 0 8px var(--pl-cyan);
 }
 
+.pitch-player-avatar-wrap {
+  width: 44px;
+  height: 44px;
+  margin: 0 auto 4px auto;
+  position: relative;
+}
+
 .pitch-player-avatar {
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  margin: 0 auto 4px auto;
+  margin: 0 auto;
   display: block;
   background: #1e293b;
   border: 2px solid rgba(255, 255, 255, 0.2);
   object-fit: cover;
+}
+
+.pitch-player-kit-fallback {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #162032;
+  border: 2px solid rgba(0, 255, 135, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
 }
 
 .pitch-player-name {

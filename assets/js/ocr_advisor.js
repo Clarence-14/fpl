@@ -1,13 +1,39 @@
 /**
  * FPL Screenshot OCR Scanner & Personalized Squad Advisor
- * Extracts player names from team screenshots using Tesseract.js,
- * matches them with the FPL player database, populates the pitch,
- * and generates immediate tactical advice.
+ * Features:
+ * - Canvas image pre-processing (upscaling, grayscale, contrast enhancement for text clarity)
+ * - Multi-pass fuzzy & normalized substring matching (handles dots, hyphens, prefixes like B.Fernandes, Calvert-Lewin)
+ * - Common player nickname / alias dictionary
+ * - Manual player search & quick squad builder
+ * - Generates immediate personalized tactical advice (Captain, Bench, Injuries, Transfers)
  */
 
 const FPLAdvisor = {
   isProcessing: false,
   scannedPlayers: [],
+
+  // Common FPL player aliases/nicknames to map accurately
+  aliases: {
+    'trent': 'alexander-arnold',
+    'taa': 'alexander-arnold',
+    'bruno': 'b.fernandes',
+    'kdb': 'de bruyne',
+    'debruyne': 'de bruyne',
+    'gabriel': 'gabriel',
+    'joao': 'joao pedro',
+    'pedro': 'joao pedro',
+    'porro': 'pedro porro',
+    'luis': 'diaz',
+    'dibu': 'e.martinez',
+    'emi': 'e.martinez',
+    'martinez': 'e.martinez',
+    'smith-rowe': 'smith rowe',
+    'esr': 'smith rowe',
+    'vvd': 'van dijk',
+    'vandijk': 'van dijk',
+    'clw': 'calvert-lewin',
+    'dcl': 'calvert-lewin'
+  },
 
   init() {
     this.setupEventListeners();
@@ -25,14 +51,13 @@ const FPLAdvisor = {
         if (e.target.files && e.target.files.length > 0) {
           const file = e.target.files[0];
           this.processImage(file);
-          fileInput.value = ''; // Reset so same file can be chosen again
+          fileInput.value = '';
         }
       });
     }
 
     if (dropzone && fileInput) {
       dropzone.addEventListener('click', (e) => {
-        // Prevent recursive trigger if user clicked browse button
         if (e.target !== browseBtn && !browseBtn?.contains(e.target)) {
           fileInput.click();
         }
@@ -72,7 +97,6 @@ const FPLAdvisor = {
         if (item.kind === 'file' && item.type.includes('image')) {
           const file = item.getAsFile();
           if (file) {
-            // Show the modal if not already open
             const modalEl = document.getElementById('screenshotModal');
             if (modalEl) {
               const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
@@ -108,8 +132,9 @@ const FPLAdvisor = {
 
         const matches = FPLApp.data.players.filter(p => 
           p.web_name.toLowerCase().includes(query) || 
-          p.second_name.toLowerCase().includes(query)
-        ).slice(0, 5);
+          p.second_name.toLowerCase().includes(query) ||
+          p.first_name.toLowerCase().includes(query)
+        ).slice(0, 6);
 
         if (matches.length === 0) {
           dropdown.innerHTML = `<div class="p-2 text-muted small bg-dark">No player found matching "${query}"</div>`;
@@ -133,7 +158,66 @@ const FPLAdvisor = {
     }
   },
 
-  // Process image using Tesseract.js OCR
+  // Pre-process image on HTML5 Canvas: Grayscale & Contrast boost for text readability
+  async preprocessImage(file) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      const reader = new FileReader();
+
+      reader.onload = (e) => {
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+
+          // Scale up if low resolution
+          let width = img.width;
+          let height = img.height;
+          if (width < 1200) {
+            const scale = Math.min(2.0, 1400 / width);
+            width = Math.round(width * scale);
+            height = Math.round(height * scale);
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // Get image pixel data
+          const imgData = ctx.getImageData(0, 0, width, height);
+          const data = imgData.data;
+
+          // Convert to grayscale and apply high contrast
+          for (let i = 0; i < data.length; i += 4) {
+            const r = data[i];
+            const g = data[i + 1];
+            const b = data[i + 2];
+
+            // Grayscale luminance formula
+            const gray = 0.299 * r + 0.587 * g + 0.114 * b;
+
+            // Contrast enhancement: stretch values
+            const factor = 1.35;
+            let contrastGray = factor * (gray - 128) + 128;
+            contrastGray = Math.max(0, Math.min(255, contrastGray));
+
+            data[i] = contrastGray;
+            data[i + 1] = contrastGray;
+            data[i + 2] = contrastGray;
+          }
+
+          ctx.putImageData(imgData, 0, 0);
+          canvas.toBlob((blob) => {
+            resolve(blob || file);
+          }, 'image/jpeg', 0.95);
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  },
+
+  // Process image using pre-processing and Tesseract.js OCR
   async processImage(file) {
     if (this.isProcessing) return;
     this.isProcessing = true;
@@ -145,40 +229,47 @@ const FPLAdvisor = {
     const previewImg = document.getElementById('ocr-image-preview');
 
     if (progressBox) progressBox.style.display = 'block';
-    if (previewContainer) previewContainer.style.display = 'block'; // Show preview container immediately
+    if (previewContainer) previewContainer.style.display = 'block';
 
-    // Immediate image preview
-    const reader = new FileReader();
-    reader.onload = (e) => {
+    // Show immediate raw preview
+    const rawReader = new FileReader();
+    rawReader.onload = (e) => {
       if (previewImg) previewImg.src = e.target.result;
     };
-    reader.readAsDataURL(file);
+    rawReader.readAsDataURL(file);
 
     try {
-      progressText.textContent = 'Preparing image for OCR...';
-      progressBar.style.width = '20%';
+      progressText.textContent = 'Enhancing image contrast & sharpening text...';
+      progressBar.style.width = '15%';
+
+      // 1. Preprocess image
+      const processedBlob = await this.preprocessImage(file);
+
+      progressText.textContent = 'Running OCR neural network...';
+      progressBar.style.width = '35%';
 
       if (typeof Tesseract === 'undefined') {
-        throw new Error('Tesseract OCR engine is loading. You can also add players manually below.');
+        throw new Error('Tesseract OCR engine not loaded. Please check your internet connection or add players manually below.');
       }
 
-      progressText.textContent = 'Scanning screenshot & detecting players...';
-      progressBar.style.width = '45%';
-
-      const ret = await Tesseract.recognize(file, 'eng', {
+      // 2. Run Tesseract recognition
+      const ret = await Tesseract.recognize(processedBlob, 'eng', {
         logger: m => {
           if (m.status === 'recognizing text' && m.progress) {
-            const pct = Math.round(m.progress * 100);
+            const pct = 35 + Math.round(m.progress * 55);
             if (progressBar) progressBar.style.width = `${pct}%`;
-            if (progressText) progressText.textContent = `Analyzing text: ${pct}%`;
+            if (progressText) progressText.textContent = `Analyzing text: ${Math.round(m.progress * 100)}%`;
           }
         }
       });
 
-      progressBar.style.width = '90%';
-      progressText.textContent = 'Matching recognized text with Premier League database...';
+      progressBar.style.width = '95%';
+      progressText.textContent = 'Matching recognized players with Premier League database...';
 
       const recognizedText = ret?.data?.text || '';
+      console.log('OCR Recognized Text:\n', recognizedText);
+
+      // 3. Multi-pass player matching
       const matched = this.matchPlayersFromText(recognizedText);
 
       progressBar.style.width = '100%';
@@ -188,48 +279,89 @@ const FPLAdvisor = {
       this.renderScannedResults(matched, recognizedText);
 
       if (matched.length > 0) {
-        FPLApp.showToast(`Recognized ${matched.length} players from your screenshot!`, 'success');
+        FPLApp.showToast(`Found ${matched.length} players from your screenshot!`, 'success');
       } else {
-        FPLApp.showToast('Could not automatically match names. Use the search box below to add your players.', 'warning');
+        FPLApp.showToast('Could not automatically identify names. Use the search box below to add your players.', 'warning');
       }
 
     } catch (err) {
-      console.warn('OCR error:', err);
+      console.warn('OCR processing notice:', err);
       if (progressBox) progressBox.style.display = 'none';
-      FPLApp.showToast(`OCR Note: ${err.message}`, 'warning');
+      FPLApp.showToast(`OCR Notice: ${err.message}`, 'warning');
       this.renderScannedResults(this.scannedPlayers, '');
     } finally {
       this.isProcessing = false;
     }
   },
 
-  // Match recognized text words against all players in FPL database
+  // Multi-pass smart player matching algorithm
   matchPlayersFromText(rawText) {
     if (!FPLApp.data || !FPLApp.data.players) return [];
 
     const allPlayers = FPLApp.data.players;
-    const words = rawText.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter(w => w.length >= 3);
+
+    // Clean text: lowercase, replace punctuation with spaces
+    const cleanedText = rawText.toLowerCase().replace(/[^a-z0-9\s]/g, ' ');
+    // Continuous text without spaces for glued text e.g. "alexanderarnold", "bfernandes"
+    const noSpacesText = cleanedText.replace(/\s+/g, '');
+    // Array of words
+    const words = cleanedText.split(/\s+/).filter(w => w.length >= 3);
 
     const matched = [];
     const matchedIds = new Set();
 
-    // 1. Direct web_name matching (e.g. "Salah", "Haaland", "Palmer", "Saka")
-    allPlayers.forEach(p => {
-      const webNameLower = p.web_name.toLowerCase();
-      const secondNameLower = p.second_name.toLowerCase();
+    // Helper: Normalize name (remove dots, hyphens, spaces)
+    const normalize = (str) => (str || '').toLowerCase().replace(/[^a-z0-9]/g, '');
 
-      const exactMatch = words.some(w => w === webNameLower || w === secondNameLower);
-      if (exactMatch && !matchedIds.has(p.id)) {
+    // Pass 1: Check Alias dictionary
+    for (const [alias, targetName] of Object.entries(this.aliases)) {
+      if (words.includes(alias) || noSpacesText.includes(alias)) {
+        const found = allPlayers.find(p => 
+          normalize(p.web_name) === normalize(targetName) || 
+          normalize(p.second_name) === normalize(targetName)
+        );
+        if (found && !matchedIds.has(found.id)) {
+          matched.push(found);
+          matchedIds.add(found.id);
+        }
+      }
+    }
+
+    // Pass 2: Substring matching for web_name and second_name
+    allPlayers.forEach(p => {
+      if (matchedIds.has(p.id)) return;
+
+      const normWeb = normalize(p.web_name);
+      const normSecond = normalize(p.second_name);
+      const normFirst = normalize(p.first_name);
+
+      // Only check if name is at least 3 characters
+      if (normWeb.length >= 3 && noSpacesText.includes(normWeb)) {
         matched.push(p);
         matchedIds.add(p.id);
+        return;
+      }
+
+      if (normSecond.length >= 4 && noSpacesText.includes(normSecond)) {
+        matched.push(p);
+        matchedIds.add(p.id);
+        return;
+      }
+
+      // Exact word match
+      if (words.includes(normWeb) || words.includes(normSecond)) {
+        matched.push(p);
+        matchedIds.add(p.id);
+        return;
       }
     });
 
-    // 2. Fuzzy Levenshtein match for slightly misspelled OCR text (e.g. "Haa1and" -> "Haaland")
+    // Pass 3: Fuzzy Levenshtein match for slightly misspelled OCR text
     if (matched.length < 15) {
       allPlayers.forEach(p => {
         if (matchedIds.has(p.id)) return;
-        const target = p.web_name.toLowerCase();
+
+        const target = normalize(p.web_name);
         if (target.length < 4) return;
 
         for (const w of words) {
@@ -248,7 +380,7 @@ const FPLAdvisor = {
     return matched;
   },
 
-  // Simple Levenshtein distance for fuzzy matching
+  // Simple Levenshtein distance
   levenshtein(a, b) {
     const matrix = [];
     for (let i = 0; i <= b.length; i++) matrix[i] = [i];
@@ -281,7 +413,7 @@ const FPLAdvisor = {
     if (matched.length === 0) {
       listContainer.innerHTML = `
         <div class="alert alert-warning small p-2">
-          <i class="bi bi-info-circle me-1"></i> No players in squad list yet. Upload a screenshot above, or search and add players manually below.
+          <i class="bi bi-info-circle me-1"></i> No players identified yet. Upload a screenshot above, or search and add players below.
         </div>
       `;
       return;
@@ -341,7 +473,7 @@ const FPLAdvisor = {
   // Apply the scanned squad to FPLPitch and generate the personalized advice
   applyScannedSquad() {
     if (this.scannedPlayers.length === 0) {
-      FPLApp.showToast('Please upload a screenshot or add players to the list before loading.', 'warning');
+      FPLApp.showToast('Please upload a screenshot or add players before loading.', 'warning');
       return;
     }
 

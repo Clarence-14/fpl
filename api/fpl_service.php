@@ -377,7 +377,7 @@ class FPLService {
                     'next_opponent' => $nextOpponent,
                     'smart_buy_score' => $smartBuyScore,
                     'captaincy_score' => $captaincyScore,
-                    'photo' => "https://resources.premierleague.com/premierleague/photos/players/110x140/p" . str_replace('.jpg', '.png', $el['code'])
+                    'photo' => "https://resources.premierleague.com/premierleague/photos/players/110x140/p" . $el['code'] . ".png"
                 ];
 
                 $players[] = $playerObj;

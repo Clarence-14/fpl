@@ -405,7 +405,12 @@ const FPLPitch = {
         ${benchOrder ? `<span class="badge bg-dark position-absolute top-0 start-0 small" style="font-size: 0.6rem;">S${benchOrder}</span>` : ''}
         
         <div onclick="FPLPitch.handlePlayerClick(${player.id})">
-          <img src="${player.photo}" alt="${player.web_name}" class="pitch-player-avatar" onerror="this.src='https://resources.premierleague.com/premierleague/photos/players/110x140/pPhoto-Missing.png'">
+          <div class="pitch-player-avatar-wrap">
+            <img src="${player.photo}" alt="${player.web_name}" class="pitch-player-avatar" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+            <div class="pitch-player-kit-fallback" style="display: none;">
+              <span class="pos-tag pos-${player.position}" style="font-size: 0.6rem; padding: 2px 4px;">${player.position}</span>
+            </div>
+          </div>
           <div class="pitch-player-name" title="${player.first_name} ${player.second_name}">${player.web_name}</div>
           <div class="pitch-player-meta">
             <span>${player.team_short}</span>
