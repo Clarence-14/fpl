@@ -323,6 +323,45 @@ const FPLApp = {
       toastEl.classList.remove('show');
       setTimeout(() => toastEl.remove(), 400);
     }, 4500);
+  },
+
+  // Universal string normalizer for search and OCR matching
+  normalizeText(str) {
+    if (!str) return '';
+    return str
+      .toString()
+      .replace(/ß|ẞ/g, 'ss')
+      .replace(/æ|Æ/g, 'ae')
+      .replace(/œ|Œ/g, 'oe')
+      .replace(/ø|Ø/g, 'o')
+      .replace(/ð|Ð/g, 'd')
+      .replace(/þ|Þ/g, 'th')
+      .replace(/đ|Đ/g, 'd')
+      .replace(/ł|Ł/g, 'l')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, '');
+  },
+
+  normalizeWords(str) {
+    if (!str) return '';
+    return str
+      .toString()
+      .replace(/ß|ẞ/g, 'ss')
+      .replace(/æ|Æ/g, 'ae')
+      .replace(/œ|Œ/g, 'oe')
+      .replace(/ø|Ø/g, 'o')
+      .replace(/ð|Ð/g, 'd')
+      .replace(/þ|Þ/g, 'th')
+      .replace(/đ|Đ/g, 'd')
+      .replace(/ł|Ł/g, 'l')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
   }
 };
 

@@ -624,14 +624,14 @@
 
                 <!-- Add player manually helper -->
                 <div class="mt-2 pt-2 border-top border-secondary">
-                  <small class="text-muted d-block mb-1">Missing a player? Type to search and add:</small>
+                  <small class="text-muted d-block mb-1">Missing a player? Type to search and add (supports accents & any name format):</small>
                   <div class="input-group input-group-sm">
-                    <input type="text" id="ocr-manual-search-input" class="form-control form-control-dark" placeholder="Search player name...">
+                    <input type="text" id="ocr-manual-search-input" class="form-control form-control-dark" placeholder="Search player name, team, position...">
                     <button type="button" id="btn-ocr-manual-add" class="btn btn-fpl-outline">
-                      <i class="bi bi-plus"></i> Add
+                      <i class="bi bi-search"></i> Search
                     </button>
                   </div>
-                  <div id="ocr-search-results-dropdown" class="list-group list-group-flush mt-1" style="max-height: 140px; overflow-y: auto; display: none;"></div>
+                  <div id="ocr-search-results-dropdown" class="list-group list-group-flush mt-1 border border-secondary rounded shadow" style="max-height: 220px; overflow-y: auto; display: none;"></div>
                 </div>
               </div>
             </div>

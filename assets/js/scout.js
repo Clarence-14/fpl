@@ -74,16 +74,31 @@ const FPLScout = {
   },
 
   applyFilters() {
-    const search = (document.getElementById('scout-search')?.value || '').toLowerCase().trim();
+    const rawSearch = document.getElementById('scout-search')?.value || '';
+    const normSearch = typeof FPLApp !== 'undefined' && FPLApp.normalizeWords 
+      ? FPLApp.normalizeWords(rawSearch) 
+      : rawSearch.toLowerCase().trim();
+    const searchTokens = normSearch ? normSearch.split(' ').filter(Boolean) : [];
+
     const pos = document.getElementById('scout-position')?.value || 'ALL';
     const teamId = document.getElementById('scout-team')?.value || 'ALL';
     const maxPrice = parseFloat(document.getElementById('scout-max-price')?.value || '16.0');
     const availableOnly = document.getElementById('scout-available-only')?.checked || false;
 
     this.filteredPlayers = this.players.filter(p => {
-      // Search
-      if (search && !p.web_name.toLowerCase().includes(search) && !p.second_name.toLowerCase().includes(search) && !p.team_name.toLowerCase().includes(search)) {
-        return false;
+      // Search with accent normalization and multi-token matching
+      if (searchTokens.length > 0) {
+        const normWeb = FPLApp.normalizeWords ? FPLApp.normalizeWords(p.web_name) : (p.web_name || '').toLowerCase();
+        const normSecond = FPLApp.normalizeWords ? FPLApp.normalizeWords(p.second_name) : (p.second_name || '').toLowerCase();
+        const normFirst = FPLApp.normalizeWords ? FPLApp.normalizeWords(p.first_name) : (p.first_name || '').toLowerCase();
+        const normFull = FPLApp.normalizeWords ? FPLApp.normalizeWords((p.first_name || '') + ' ' + (p.second_name || '')) : '';
+        const normTeam = FPLApp.normalizeWords ? FPLApp.normalizeWords(p.team_name || '') : (p.team_name || '').toLowerCase();
+        const normTeamShort = FPLApp.normalizeWords ? FPLApp.normalizeWords(p.team_short || '') : (p.team_short || '').toLowerCase();
+        const normPos = FPLApp.normalizeWords ? FPLApp.normalizeWords(p.position || '') : (p.position || '').toLowerCase();
+
+        const haystack = `${normWeb} ${normSecond} ${normFirst} ${normFull} ${normTeam} ${normTeamShort} ${normPos}`;
+        const allMatch = searchTokens.every(token => haystack.includes(token));
+        if (!allMatch) return false;
       }
       // Position
       if (pos !== 'ALL' && p.position !== pos) return false;

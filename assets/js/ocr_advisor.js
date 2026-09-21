@@ -145,6 +145,19 @@ const FPLAdvisor = {
     'noni': 'madueke',
     'nico': 'n.williams',
     'nwilliams': 'n.williams',
+    // Extended aliases for common search & OCR variants
+    'gross': 'groß',
+    'pascal gross': 'groß',
+    'munoz': 'muñoz',
+    'daniel munoz': 'muñoz',
+    'tzolis': 'tzolis',
+    'mukiele': 'mukiele',
+    'cherki': 'cherki',
+    'calafiori': 'calafiori',
+    'diop': 'diop',
+    'schade': 'schade',
+    'dalot': 'dalot',
+    'dubravka': 'dubravka',
   },
 
   init() {
@@ -236,37 +249,53 @@ const FPLAdvisor = {
 
     if (searchInput && dropdown) {
       const handleSearch = () => {
-        const query = searchInput.value.trim().toLowerCase();
-        if (query.length < 2 || !FPLApp.data || !FPLApp.data.players) {
+        const query = searchInput.value || '';
+        if (query.trim().length < 2 || !FPLApp.data || !FPLApp.data.players) {
           dropdown.style.display = 'none';
+          dropdown.innerHTML = '';
           return;
         }
 
-        const matches = FPLApp.data.players.filter(p => 
-          p.web_name.toLowerCase().includes(query) || 
-          p.second_name.toLowerCase().includes(query) ||
-          p.first_name.toLowerCase().includes(query)
-        ).slice(0, 6);
+        const matches = this.searchPlayers(query, 15);
 
         if (matches.length === 0) {
-          dropdown.innerHTML = `<div class="p-2 text-muted small bg-dark">No player found matching "${query}"</div>`;
+          dropdown.innerHTML = `<div class="p-2 text-muted small bg-dark border border-secondary rounded">No player found matching "${query}"</div>`;
           dropdown.style.display = 'block';
           return;
         }
 
-        dropdown.innerHTML = matches.map(p => `
-          <a href="javascript:void(0)" class="list-group-item list-group-item-action bg-dark text-white border-secondary p-2 d-flex justify-content-between align-items-center" onclick="FPLAdvisor.addPlayerManually(${p.id})">
-            <div>
-              <strong>${p.web_name}</strong> <small class="text-muted">(${p.team_short} · ${p.position} · £${p.price}m)</small>
-            </div>
-            <span class="badge bg-success">+ Add</span>
-          </a>
-        `).join('');
+        dropdown.innerHTML = matches.map(p => {
+          const alreadyAdded = this.scannedPlayers.some(sp => sp.id === p.id);
+          const fullNameDiff = (p.first_name && p.second_name && p.web_name !== p.second_name) 
+            ? `<small class="text-muted ms-1">(${p.first_name} ${p.second_name})</small>` 
+            : '';
+
+          return `
+            <a href="javascript:void(0)" class="list-group-item list-group-item-action bg-dark text-white border-secondary p-2 d-flex justify-content-between align-items-center ${alreadyAdded ? 'opacity-50' : ''}" 
+               ${alreadyAdded ? '' : `onclick="FPLAdvisor.addPlayerManually(${p.id})"`}>
+              <div class="text-truncate me-2">
+                <div class="fw-bold text-white d-inline">${p.web_name}</div>
+                ${fullNameDiff}
+                <div class="small text-muted">${p.team_short} · ${p.position} · £${p.price}m · ${p.total_points || 0} pts</div>
+              </div>
+              <span class="badge ${alreadyAdded ? 'bg-secondary' : 'bg-success'} flex-shrink-0">
+                ${alreadyAdded ? 'Added' : '+ Add'}
+              </span>
+            </a>
+          `;
+        }).join('');
         dropdown.style.display = 'block';
       };
 
       searchInput.addEventListener('input', handleSearch);
       if (searchBtn) searchBtn.addEventListener('click', handleSearch);
+
+      // Close dropdown when clicking outside
+      document.addEventListener('click', (e) => {
+        if (!searchInput.contains(e.target) && !dropdown.contains(e.target) && (!searchBtn || !searchBtn.contains(e.target))) {
+          dropdown.style.display = 'none';
+        }
+      });
     }
   },
 
@@ -468,14 +497,13 @@ const FPLAdvisor = {
   },
 
   // ====================================================================
+  // ====================================================================
   // EXTRACT SQUAD VALUE & BANK FROM OCR TEXT
-  // Looks for patterns like "£104.2m", "Squad Value 102.3", "Bank 0.8m"
   // ====================================================================
   extractFinancialInfo(rawText) {
     const text = rawText.toLowerCase().replace(/\n/g, ' ');
 
     // Pattern: Squad Value / Team Value / Value
-    // Matches: "squad value £104.2m", "value: 102.3", "squad value 104.2"
     const valuePatterns = [
       /(?:squad|team)\s*value\s*[:\-]?\s*[£]?\s*(\d{2,3}(?:\.\d{1,2})?)\s*m?/i,
       /value\s*[:\-]?\s*[£]?\s*(\d{2,3}(?:\.\d{1,2})?)\s*m/i,
@@ -486,196 +514,294 @@ const FPLAdvisor = {
       const match = text.match(pattern);
       if (match) {
         const val = parseFloat(match[1]);
-        if (val >= 50 && val <= 200) { // Reasonable FPL squad value range
+        if (val >= 50 && val <= 200) {
           this.detectedSquadValue = val;
-          console.log('Detected Squad Value:', val);
           break;
         }
       }
     }
 
-    // Pattern: Bank / In The Bank / ITB / Money remaining
-    // Matches: "bank £0.8m", "in the bank 2.3", "itb 0.5"
+    // Pattern: Bank / In The Bank / ITB / Budget / Money remaining
     const bankPatterns = [
       /(?:in\s*the\s*)?bank\s*[:\-]?\s*[£]?\s*(\d{1,3}(?:\.\d{1,2})?)\s*m?/i,
       /itb\s*[:\-]?\s*[£]?\s*(\d{1,3}(?:\.\d{1,2})?)\s*m?/i,
       /(?:remaining|money|budget)\s*[:\-]?\s*[£]?\s*(\d{1,3}(?:\.\d{1,2})?)\s*m?/i,
-      /[£]\s*(\d{1,2}\.\d)\s*m?\s*(?:bank|itb|remaining)/i,
+      /[£]?\s*(\d{1,2}\.\d)\s*m?\s*(?:bank|itb|remaining|budget)/i,
     ];
 
     for (const pattern of bankPatterns) {
       const match = text.match(pattern);
       if (match) {
         const val = parseFloat(match[1]);
-        if (val >= 0 && val <= 105) { // Reasonable FPL bank range
+        if (val >= 0 && val <= 105) {
           this.detectedBankAmount = val;
-          console.log('Detected Bank Amount:', val);
           break;
         }
       }
     }
   },
 
+  // Normalization helpers (delegates to FPLApp if present)
+  normalizeText(str) {
+    if (typeof FPLApp !== 'undefined' && FPLApp.normalizeText) {
+      return FPLApp.normalizeText(str);
+    }
+    return (str || '')
+      .replace(/ß|ẞ/g, 'ss').replace(/æ|Æ/g, 'ae').replace(/œ|Œ/g, 'oe')
+      .replace(/ø|Ø/g, 'o').replace(/ð|Ð/g, 'd').replace(/þ|Þ/g, 'th')
+      .replace(/đ|Đ/g, 'd').replace(/ł|Ł/g, 'l')
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase().replace(/[^a-z0-9]/g, '');
+  },
+
+  normalizeWords(str) {
+    if (typeof FPLApp !== 'undefined' && FPLApp.normalizeWords) {
+      return FPLApp.normalizeWords(str);
+    }
+    return (str || '')
+      .replace(/ß|ẞ/g, 'ss').replace(/æ|Æ/g, 'ae').replace(/œ|Œ/g, 'oe')
+      .replace(/ø|Ø/g, 'o').replace(/ð|Ð/g, 'd').replace(/þ|Þ/g, 'th')
+      .replace(/đ|Đ/g, 'd').replace(/ł|Ł/g, 'l')
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase().replace(/[^a-z0-9\s]/g, ' ')
+      .replace(/\s+/g, ' ').trim();
+  },
+
+  // High-performance, normalized multi-token search for players
+  searchPlayers(query, maxResults = 15) {
+    if (!FPLApp.data || !FPLApp.data.players || !query) return [];
+    const cleanQuery = this.normalizeWords(query);
+    if (cleanQuery.length < 2) return [];
+
+    const queryTokens = cleanQuery.split(' ').filter(Boolean);
+    const allPlayers = FPLApp.data.players;
+
+    const scored = [];
+
+    for (const p of allPlayers) {
+      const normWeb = this.normalizeWords(p.web_name);
+      const normSecond = this.normalizeWords(p.second_name);
+      const normFirst = this.normalizeWords(p.first_name);
+      const normFull = this.normalizeWords((p.first_name || '') + ' ' + (p.second_name || ''));
+      const normTeam = this.normalizeWords(p.team_name || '');
+      const normTeamShort = this.normalizeWords(p.team_short || '');
+      const normPos = this.normalizeWords(p.position || '');
+
+      const searchable = `${normWeb} ${normSecond} ${normFirst} ${normFull} ${normTeam} ${normTeamShort} ${normPos}`;
+
+      // All search words must be present somewhere in the player's info
+      const allMatch = queryTokens.every(t => searchable.includes(t));
+      if (!allMatch) continue;
+
+      let score = 0;
+      if (normWeb === cleanQuery) score += 2000;
+      else if (normSecond === cleanQuery || normFull === cleanQuery) score += 1500;
+      else if (normWeb.startsWith(cleanQuery)) score += 1000;
+      else if (normSecond.startsWith(cleanQuery) || normFull.startsWith(cleanQuery)) score += 800;
+      else if (normWeb.includes(cleanQuery)) score += 600;
+      else if (normSecond.includes(cleanQuery)) score += 400;
+      else score += 200;
+
+      if (normWeb.startsWith(queryTokens[0])) score += 150;
+      score += (p.total_points || 0) * 0.1;
+      score += (p.price || 0) * 0.5;
+
+      scored.push({ player: p, score });
+    }
+
+    scored.sort((a, b) => b.score - a.score);
+    return scored.slice(0, maxResults).map(s => s.player);
+  },
+
   // ====================================================================
-  // MULTI-PASS SMART PLAYER MATCHING ALGORITHM
-  // Pass 1: Alias dictionary
-  // Pass 2: Exact/substring web_name + second_name match
-  // Pass 3: Normalized accent-insensitive matching
-  // Pass 4: Fuzzy Levenshtein (dist <= 1 for short names, <= 2 for long)
+  // ENHANCED CONTEXT-AWARE SMART PLAYER MATCHING ALGORITHM
   // ====================================================================
   matchPlayersFromText(rawText) {
     if (!FPLApp.data || !FPLApp.data.players) return [];
 
     const allPlayers = FPLApp.data.players;
 
-    // Clean text: lowercase, replace punctuation with spaces
-    const cleanedText = rawText.toLowerCase().replace(/[^a-z0-9\s]/g, ' ');
-    // Continuous text without spaces for glued text e.g. "alexanderarnold", "bfernandes"
-    const noSpacesText = cleanedText.replace(/\s+/g, '');
-    // Array of words (min 2 chars for better matching)
-    const words = cleanedText.split(/\s+/).filter(w => w.length >= 2);
-    // Array of word pairs (bigrams) for compound names
-    const bigrams = [];
-    for (let i = 0; i < words.length - 1; i++) {
-      bigrams.push(words[i] + ' ' + words[i + 1]);
-      bigrams.push(words[i] + words[i + 1]); // no space version
-    }
+    // 1. UI stopwords that must NEVER match as player names
+    const uiStopwords = new Set([
+      'gameweek', 'deadline', 'free transfers', 'transfers', 'transfer', 'cost', 'pts', 'points',
+      'budget', 'wildcard', 'free hit', 'hit', 'available', 'pitch', 'list', 'opponent',
+      'opponents', 'fantasy', 'bank', 'squad value', 'team value', 'in the bank', 'itb',
+      'remaining', 'sat', 'sun', 'mon', 'tue', 'wed', 'thu', 'fri',
+      'jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec',
+      'sub', 'subs', 'substitutes', 'captain', 'vice', 'bench', 'fixtures', 'fixture'
+    ]);
 
-    const matched = [];
-    const matchedIds = new Set();
+    // 2. Parse text into structured card lines/blocks
+    const rawLines = rawText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+    const cardTokens = [];
 
-    // Helper: Normalize name — remove dots, hyphens, spaces, accents
-    const normalize = (str) => {
-      return (str || '')
-        .toLowerCase()
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '') // strip diacritics/accents
-        .replace(/[^a-z0-9]/g, '');
-    };
+    for (let i = 0; i < rawLines.length; i++) {
+      const line = rawLines[i];
 
-    // Helper: Check if text contains normalized name
-    const textContains = (name) => {
-      const norm = normalize(name);
-      if (norm.length < 3) return false;
-      return noSpacesText.includes(norm);
-    };
+      // Extract price tag (e.g. £5.4m, 6.0m, £15.5m)
+      let price = null;
+      const cleanPriceLine = line.replace(/£/g, '');
+      const pm = cleanPriceLine.match(/(\d{1,2}\.\d)\s*m?\b/);
+      if (pm) {
+        price = parseFloat(pm[1]);
+      }
 
-    // Pass 1: Check Alias dictionary (high priority)
-    for (const [alias, targetName] of Object.entries(this.aliases)) {
-      const normAlias = normalize(alias);
-      if (normAlias.length < 3) continue;
+      // Extract fixture code (e.g. CRY (A), LEE (H), TOT (H))
+      let fixture = null;
+      const fm = line.match(/\b([A-Za-z]{3})\s*\(([HAha])\)/);
+      if (fm) {
+        fixture = fm[1].toUpperCase();
+      }
 
-      // Check in both word list and continuous text
-      const aliasFound = words.includes(normAlias) || 
-                         noSpacesText.includes(normAlias) ||
-                         bigrams.some(b => normalize(b) === normAlias);
+      // Clean line: remove fixtures, prices, and stopwords to isolate player name
+      let namePart = line
+        .replace(/\b[A-Za-z]{3}\s*\([HAha]\)/g, ' ')
+        .replace(/[£]?\s*\d{1,2}\.\d\s*m?\b/g, ' ');
 
-      if (aliasFound) {
-        const normTarget = normalize(targetName);
-        const found = allPlayers.find(p =>
-          normalize(p.web_name) === normTarget ||
-          normalize(p.second_name) === normTarget ||
-          normalize(p.first_name + ' ' + p.second_name) === normTarget
-        );
-        if (found && !matchedIds.has(found.id)) {
-          matched.push(found);
-          matchedIds.add(found.id);
+      // Remove UI stopwords
+      for (const sw of uiStopwords) {
+        const re = new RegExp(`\\b${sw}\\b`, 'gi');
+        namePart = namePart.replace(re, ' ');
+      }
+
+      const words = this.normalizeWords(namePart).split(' ').filter(w => w.length >= 2 && !uiStopwords.has(w));
+      
+      for (const w of words) {
+        const normW = this.normalizeText(w);
+        if (normW.length >= 3 && !uiStopwords.has(normW)) {
+          cardTokens.push({
+            norm: normW,
+            price: price,
+            fixture: fixture,
+            lineIdx: i
+          });
+        }
+      }
+
+      // Add bigram for 2-word names (e.g. "joao pedro")
+      if (words.length >= 2) {
+        const bgNorm = this.normalizeText(words[0] + words[1]);
+        if (bgNorm.length >= 4) {
+          cardTokens.push({
+            norm: bgNorm,
+            price: price,
+            fixture: fixture,
+            lineIdx: i
+          });
         }
       }
     }
 
-    // Pass 2: Direct substring matching for web_name and second_name
-    allPlayers.forEach(p => {
-      if (matchedIds.has(p.id)) return;
+    // 3. Score candidate players across all extracted card tokens
+    const playerCandidates = new Map(); // playerId => candidate info
 
-      const normWeb = normalize(p.web_name);
-      const normSecond = normalize(p.second_name);
-      const normFirst = normalize(p.first_name);
-      const normFull = normalize(p.first_name + ' ' + p.second_name);
+    for (const p of allPlayers) {
+      const pNormWeb = this.normalizeText(p.web_name);
+      const pNormSecond = this.normalizeText(p.second_name);
+      const pNormFull = this.normalizeText((p.first_name || '') + (p.second_name || ''));
 
-      // Check web_name (min 3 chars to avoid false positives)
-      if (normWeb.length >= 3 && noSpacesText.includes(normWeb)) {
-        matched.push(p);
-        matchedIds.add(p.id);
-        return;
-      }
-
-      // Check second_name (min 4 chars)
-      if (normSecond.length >= 4 && noSpacesText.includes(normSecond)) {
-        matched.push(p);
-        matchedIds.add(p.id);
-        return;
-      }
-
-      // Check full name in bigrams
-      if (normFull.length >= 6 && noSpacesText.includes(normFull)) {
-        matched.push(p);
-        matchedIds.add(p.id);
-        return;
-      }
-
-      // Exact word match
-      if (normWeb.length >= 3 && words.includes(normWeb)) {
-        matched.push(p);
-        matchedIds.add(p.id);
-        return;
-      }
-
-      if (normSecond.length >= 4 && words.includes(normSecond)) {
-        matched.push(p);
-        matchedIds.add(p.id);
-        return;
-      }
-    });
-
-    // Pass 3: Accent-insensitive matching for special characters
-    // (Already handled by normalize() in Pass 2, but check compound names in bigrams)
-    allPlayers.forEach(p => {
-      if (matchedIds.has(p.id)) return;
-
-      const normWeb = normalize(p.web_name);
-      if (normWeb.length < 4) return;
-
-      // Check bigrams for compound names like "joao pedro", "calvert lewin"
-      for (const bg of bigrams) {
-        const normBg = normalize(bg);
-        if (normBg === normWeb || normBg === normalize(p.second_name)) {
-          matched.push(p);
-          matchedIds.add(p.id);
-          return;
+      // Check alias dictionary
+      let targetAliasNorm = null;
+      for (const [alias, target] of Object.entries(this.aliases)) {
+        if (this.normalizeText(target) === pNormWeb || this.normalizeText(target) === pNormSecond) {
+          targetAliasNorm = this.normalizeText(alias);
+          break;
         }
       }
-    });
 
-    // Pass 4: Fuzzy Levenshtein match for slightly misspelled OCR text
-    if (matched.length < 15) {
-      allPlayers.forEach(p => {
-        if (matchedIds.has(p.id)) return;
+      for (const tok of cardTokens) {
+        let isMatch = false;
+        let matchScore = 0;
 
-        const target = normalize(p.web_name);
-        if (target.length < 4) return;
+        if (tok.norm === pNormWeb) {
+          isMatch = true;
+          matchScore = 100;
+        } else if (tok.norm === pNormSecond && pNormSecond.length >= 4) {
+          isMatch = true;
+          matchScore = 80;
+        } else if (tok.norm === pNormFull && pNormFull.length >= 6) {
+          isMatch = true;
+          matchScore = 90;
+        } else if (targetAliasNorm && tok.norm === targetAliasNorm) {
+          isMatch = true;
+          matchScore = 85;
+        }
 
-        // Allow distance 1 for names 4-6 chars, distance 2 for names 7+ chars
-        const maxDist = target.length >= 7 ? 2 : 1;
+        if (isMatch) {
+          // Bonus/penalty for price proximity
+          if (tok.price !== null) {
+            const diff = Math.abs(p.price - tok.price);
+            if (diff <= 0.3) {
+              matchScore += 40; // close price match
+            } else if (diff > 1.2) {
+              matchScore -= 30; // price mismatch
+            }
+          }
 
-        for (const w of words) {
-          if (w.length < 3) continue;
-          if (Math.abs(w.length - target.length) > maxDist) continue;
-
-          const dist = this.levenshtein(w, target);
-          if (dist <= maxDist) {
-            matched.push(p);
-            matchedIds.add(p.id);
-            break;
+          const existing = playerCandidates.get(p.id);
+          if (!existing || matchScore > existing.score) {
+            playerCandidates.set(p.id, {
+              player: p,
+              score: matchScore,
+              tokNorm: tok.norm,
+              price: tok.price
+            });
           }
         }
-      });
+      }
     }
 
-    return matched;
+    // 4. Group candidates by normalized name to resolve ambiguous matches
+    // e.g. "King" (Tom King GKP vs Josh King MID), "Muñoz" (NFO DEF vs LIV MID)
+    const groupedByName = new Map();
+    for (const cand of playerCandidates.values()) {
+      const key = this.normalizeText(cand.player.web_name);
+      if (!groupedByName.has(key)) groupedByName.set(key, []);
+      groupedByName.get(key).push(cand);
+    }
+
+    // 5. Select best players enforcing FPL squad constraints
+    // (Max 2 GKPs, 5 DEFs, 5 MIDs, 3 FWDs, max 3 per team, max 15 total)
+    const posLimits = { 'GKP': 2, 'DEF': 5, 'MID': 5, 'FWD': 3 };
+    const posCounts = { 'GKP': 0, 'DEF': 0, 'MID': 0, 'FWD': 0 };
+    const teamCounts = {};
+    const selected = [];
+    const selectedIds = new Set();
+
+    // Sort name groups by highest individual score in the group
+    const sortedGroups = Array.from(groupedByName.entries()).sort((a, b) => {
+      const maxA = Math.max(...a[1].map(c => c.score));
+      const maxB = Math.max(...b[1].map(c => c.score));
+      return maxB - maxA;
+    });
+
+    for (const [, candidates] of sortedGroups) {
+      if (selected.length >= 15) break;
+
+      // Sort candidate players within the name group by score descending
+      candidates.sort((a, b) => b.score - a.score);
+
+      for (const cand of candidates) {
+        const p = cand.player;
+        if (selectedIds.has(p.id)) continue;
+
+        const pos = p.position;
+        const team = p.team_short;
+
+        if (posCounts[pos] < posLimits[pos] && (teamCounts[team] || 0) < 3) {
+          selected.push(p);
+          selectedIds.add(p.id);
+          posCounts[pos]++;
+          teamCounts[team] = (teamCounts[team] || 0) + 1;
+          break; // resolved this name group
+        }
+      }
+    }
+
+    return selected;
   },
 
-  // Simple Levenshtein distance
+  // Levenshtein distance for fuzzy fallback
   levenshtein(a, b) {
     const matrix = [];
     for (let i = 0; i <= b.length; i++) matrix[i] = [i];
@@ -698,14 +824,20 @@ const FPLAdvisor = {
   },
 
   // ====================================================================
-  // RENDER SCANNED RESULTS with squad value & bank display
+  // RENDER SCANNED RESULTS with squad value, bank display & position counts
   // ====================================================================
   renderScannedResults(matched, rawText = '') {
     const listContainer = document.getElementById('ocr-matched-players-list');
     const countBadge = document.getElementById('ocr-matched-count');
     if (!listContainer) return;
 
-    if (countBadge) countBadge.textContent = `${matched.length} players in list`;
+    if (countBadge) countBadge.textContent = `${matched.length}/15 players`;
+
+    // Calculate position counts
+    const gks = matched.filter(p => p.position === 'GKP').length;
+    const defs = matched.filter(p => p.position === 'DEF').length;
+    const mids = matched.filter(p => p.position === 'MID').length;
+    const fwds = matched.filter(p => p.position === 'FWD').length;
 
     // Build financial info display
     let financialHtml = '';
@@ -728,10 +860,22 @@ const FPLAdvisor = {
       `;
     }
 
+    // Position quota bar
+    const quotaHtml = `
+      <div class="d-flex flex-wrap gap-1 align-items-center mb-2 p-2 rounded bg-dark border border-secondary small">
+        <span class="text-muted me-1">Formation:</span>
+        <span class="badge ${gks === 2 ? 'bg-success' : 'bg-secondary'}">GKP ${gks}/2</span>
+        <span class="badge ${defs === 5 ? 'bg-success' : 'bg-secondary'}">DEF ${defs}/5</span>
+        <span class="badge ${mids === 5 ? 'bg-success' : 'bg-secondary'}">MID ${mids}/5</span>
+        <span class="badge ${fwds === 3 ? 'bg-success' : 'bg-secondary'}">FWD ${fwds}/3</span>
+        ${matched.length === 15 ? '<span class="badge bg-success ms-auto"><i class="bi bi-check-all"></i> Full Squad</span>' : `<span class="badge bg-warning text-dark ms-auto">${15 - matched.length} slots left</span>`}
+      </div>
+    `;
+
     if (matched.length === 0) {
       listContainer.innerHTML = `
         ${financialHtml}
-        <div class="alert alert-warning small p-2">
+        <div class="alert alert-warning small p-2 mb-2">
           <i class="bi bi-info-circle me-1"></i> No players identified yet. Upload a screenshot above, or search and add players below.
         </div>
       `;
@@ -740,13 +884,14 @@ const FPLAdvisor = {
 
     listContainer.innerHTML = `
       ${financialHtml}
+      ${quotaHtml}
       <div class="row g-2 mb-2">
         ${matched.map(p => `
           <div class="col-6 col-sm-4 col-md-3">
             <div class="p-2 rounded bg-dark border border-secondary d-flex justify-content-between align-items-center">
               <div style="min-width: 0;">
-                <div class="fw-bold small text-truncate" style="max-width: 90px;" title="${p.web_name}">${p.web_name}</div>
-                <small class="text-muted">${p.team_short} · ${p.position}</small>
+                <div class="fw-bold small text-truncate text-white" style="max-width: 95px;" title="${p.web_name}">${p.web_name}</div>
+                <small class="text-muted">${p.team_short} · ${p.position} · £${p.price}m</small>
               </div>
               <button type="button" class="btn btn-sm btn-link text-danger p-0 ms-1 flex-shrink-0" onclick="FPLAdvisor.removeScannedPlayer(${p.id})" title="Remove">
                 <i class="bi bi-x-circle-fill"></i>
@@ -770,7 +915,21 @@ const FPLAdvisor = {
     }
 
     if (this.scannedPlayers.length >= 15) {
-      FPLApp.showToast('Squad already has 15 players.', 'warning');
+      FPLApp.showToast('Squad already has 15 players. Remove a player first.', 'warning');
+      return;
+    }
+
+    const gks = this.scannedPlayers.filter(p => p.position === 'GKP').length;
+    const defs = this.scannedPlayers.filter(p => p.position === 'DEF').length;
+    const mids = this.scannedPlayers.filter(p => p.position === 'MID').length;
+    const fwds = this.scannedPlayers.filter(p => p.position === 'FWD').length;
+
+    const limits = { 'GKP': 2, 'DEF': 5, 'MID': 5, 'FWD': 3 };
+    if ((player.position === 'GKP' && gks >= 2) ||
+        (player.position === 'DEF' && defs >= 5) ||
+        (player.position === 'MID' && mids >= 5) ||
+        (player.position === 'FWD' && fwds >= 3)) {
+      FPLApp.showToast(`Your squad already has the maximum of ${limits[player.position]} ${player.position}s. Remove one first.`, 'warning');
       return;
     }
 
