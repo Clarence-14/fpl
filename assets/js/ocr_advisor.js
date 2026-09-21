@@ -277,6 +277,7 @@ const FPLAdvisor = {
     FPLPitch.squad.bench = bench;
     FPLPitch.renderPitch();
     FPLPitch.updateBudgetUI();
+    FPLPitch.saveSquadToStorage();
 
     // Close screenshot modal
     const modalEl = document.getElementById('screenshotModal');

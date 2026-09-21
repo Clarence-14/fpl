@@ -20,12 +20,11 @@ const FPLPitch = {
     this.allPlayers = data.players;
     this.setupPitchControls();
 
-    // If squad is empty, pre-populate with top Smart Buy Score template squad
-    if (this.squad.starters.length === 0 && this.squad.bench.length === 0) {
-      this.autoPickSquad();
-    } else {
-      this.renderPitch();
-      this.updateBudgetUI();
+    // Check if user has a previously saved squad in localStorage
+    const hasLoadedSaved = this.loadSquadFromStorage();
+    if (!hasLoadedSaved) {
+      // If no saved squad, pre-populate with top Smart Buy Score template squad
+      this.autoPickSquad(false); // false = don't overwrite toast if first visit
     }
   },
 
@@ -35,7 +34,7 @@ const FPLPitch = {
     const optimizeBtn = document.getElementById('btn-optimize-transfers');
 
     if (autoPickBtn) {
-      autoPickBtn.addEventListener('click', () => this.autoPickSquad());
+      autoPickBtn.addEventListener('click', () => this.autoPickSquad(true));
     }
 
     if (clearBtn) {
@@ -43,6 +42,7 @@ const FPLPitch = {
         this.squad = { starters: [], bench: [] };
         this.captainId = null;
         this.viceCaptainId = null;
+        this.clearStorage();
         this.renderPitch();
         this.updateBudgetUI();
         FPLApp.showToast('Squad cleared.', 'info');
@@ -55,6 +55,81 @@ const FPLPitch = {
           FPLStrategy.runTransferOptimizer(this.getAllSquadPlayers(), this.getRemainingBank());
         }
       });
+    }
+  },
+
+  // Save squad state to localStorage
+  saveSquadToStorage(managerData = null) {
+    try {
+      const dataToSave = {
+        starters: this.squad.starters.map(p => p.id),
+        bench: this.squad.bench.map(p => p.id),
+        captainId: this.captainId,
+        viceCaptainId: this.viceCaptainId,
+        manager: managerData || JSON.parse(localStorage.getItem('fpl_manager_data') || 'null')
+      };
+      localStorage.setItem('fpl_user_squad', JSON.stringify(dataToSave));
+      if (managerData) {
+        localStorage.setItem('fpl_manager_data', JSON.stringify(managerData));
+      }
+    } catch (e) {
+      console.warn('Could not save squad to localStorage:', e);
+    }
+  },
+
+  // Load squad state from localStorage
+  loadSquadFromStorage() {
+    try {
+      const saved = localStorage.getItem('fpl_user_squad');
+      if (!saved) return false;
+
+      const parsed = JSON.parse(saved);
+      if (!parsed.starters || !Array.isArray(parsed.starters) || parsed.starters.length === 0) {
+        return false;
+      }
+
+      const starters = parsed.starters.map(id => this.allPlayers.find(p => p.id === id)).filter(Boolean);
+      const bench = (parsed.bench || []).map(id => this.allPlayers.find(p => p.id === id)).filter(Boolean);
+
+      if (starters.length === 0) return false;
+
+      this.squad.starters = starters;
+      this.squad.bench = bench;
+      this.captainId = parsed.captainId || starters[0]?.id;
+      this.viceCaptainId = parsed.viceCaptainId || starters[1]?.id;
+
+      this.renderPitch();
+      this.updateBudgetUI();
+
+      // Restore Manager profile banner if previously loaded
+      if (parsed.manager) {
+        const profBanner = document.getElementById('manager-profile-banner');
+        if (profBanner) {
+          profBanner.style.display = 'flex';
+          document.getElementById('manager-team-name').textContent = parsed.manager.team_name || 'My Squad';
+          document.getElementById('manager-owner-name').textContent = parsed.manager.player_name || 'Manager';
+          document.getElementById('manager-overall-pts').textContent = parsed.manager.total_points || '-';
+          document.getElementById('manager-overall-rank').textContent = parsed.manager.overall_rank ? parsed.manager.overall_rank.toLocaleString() : '-';
+        }
+      }
+
+      FPLApp.showToast('Restored your saved squad!', 'info');
+      return true;
+    } catch (e) {
+      console.warn('Could not restore squad from localStorage:', e);
+      return false;
+    }
+  },
+
+  // Clear localStorage
+  clearStorage() {
+    try {
+      localStorage.removeItem('fpl_user_squad');
+      localStorage.removeItem('fpl_manager_data');
+      const profBanner = document.getElementById('manager-profile-banner');
+      if (profBanner) profBanner.style.display = 'none';
+    } catch (e) {
+      console.warn(e);
     }
   },
 
@@ -126,7 +201,10 @@ const FPLPitch = {
 
     this.renderPitch();
     this.updateBudgetUI();
-    FPLApp.showToast('Optimal high-SBS squad generated!', 'success');
+    this.saveSquadToStorage();
+    if (showToast) {
+      FPLApp.showToast('Optimal high-SBS squad generated!', 'success');
+    }
   },
 
   // Add a player from Scout or Recommendations
@@ -180,6 +258,7 @@ const FPLPitch = {
 
     this.renderPitch();
     this.updateBudgetUI();
+    this.saveSquadToStorage();
     FPLApp.showToast(`Added ${player.web_name} to squad.`, 'success');
   },
 
@@ -193,6 +272,7 @@ const FPLPitch = {
 
     this.renderPitch();
     this.updateBudgetUI();
+    this.saveSquadToStorage();
     FPLApp.showToast('Player removed from squad.', 'info');
   },
 
@@ -258,6 +338,7 @@ const FPLPitch = {
     }
 
     this.renderPitch();
+    this.saveSquadToStorage();
     FPLApp.showToast(`Swapped ${p1.web_name} with ${p2.web_name}.`, 'success');
   },
 
@@ -273,6 +354,7 @@ const FPLPitch = {
       FPLApp.showToast('Captain updated.', 'info');
     }
     this.renderPitch();
+    this.saveSquadToStorage();
   },
 
   // Render Pitch UI
@@ -413,6 +495,7 @@ const FPLPitch = {
 
       this.renderPitch();
       this.updateBudgetUI();
+      this.saveSquadToStorage(res.manager);
 
       const managerName = res.manager.player_name || 'Manager';
       const teamName = res.manager.team_name || 'Squad';
