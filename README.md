@@ -1,4 +1,4 @@
-# ⚽ FPL Intelligence & Strategy Suite
+#  FPL Intelligence & Strategy Suite
 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![FPL Season](https://img.shields.io/badge/FPL-Live_Season_2026%2F27-green.svg)](https://fantasy.premierleague.com/)
