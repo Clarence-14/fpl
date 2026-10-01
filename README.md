@@ -159,7 +159,7 @@ Visit `http://localhost:8080/index.html`.
 ---
 
 
-## ⏰ Automated Cloud Data Refresh (GitHub Actions)
+##  Automated Cloud Data Refresh (GitHub Actions)
 
 This project includes a fully automated GitHub Actions workflow in [`.github/workflows/update_fpl.yml`](.github/workflows/update_fpl.yml):
 
